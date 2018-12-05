@@ -1,6 +1,6 @@
 <?php
 
-namespace Cpro\Presentation;
+namespace Cpro\Presentation\Resource;
 
 use ZipArchive;
 
@@ -53,7 +53,7 @@ class Resource
      */
     public static function createFromNode($resourceNode, $relativeFile, ZipArchive $zipArchive)
     {
-        return new static((string) $resourceNode['Target'], $resourceNode['Type'], $relativeFile, $zipArchive);
+        return new static((string) $resourceNode['Target'], (string) $resourceNode['Type'], $relativeFile, $zipArchive);
     }
 
     public function getContent()
@@ -125,7 +125,7 @@ class Resource
         if (preg_match('#/#', $filename)) {
             throw new \Exception('Filename can not be a a path.');
         }
-        
+
         $this->target = dirname($this->target).'/'.$filename;
 
         return $this;
@@ -139,7 +139,7 @@ class Resource
         return $this->type;
     }
 
-    public function setArchive(ZipArchive $zipArchive)
+    public function setZipArchive(ZipArchive $zipArchive)
     {
         return $this->zipArchive = $zipArchive;
     }

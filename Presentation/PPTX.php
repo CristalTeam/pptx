@@ -3,6 +3,8 @@
 namespace Cpro\Presentation;
 
 use ZipArchive;
+use Cpro\Presentation\Resource\XmlResource;
+use Cpro\Presentation\Resource\Resource;
 
 class PPTX
 {
@@ -81,11 +83,11 @@ class PPTX
 
     /**
      * @param $file
-     * @return XmlFile
+     * @return XmlResource
      */
-    protected function readXmlFile($file)
+    protected function readXmlFile($file, $type = '')
     {
-        return new XmlFile($this->source, $file);
+        return new XmlResource($file, $type, 'ppt/', $this->source);
     }
 
     /**
@@ -98,7 +100,7 @@ class PPTX
 
         foreach ($this->presentation->content->xpath('p:sldIdLst/p:sldId') as $slide) {
             $id = $slide->xpath('@r:id')[0]['id'].'';
-            $this->slides[] = $this->createSlideFromFile('ppt/'.$this->presentation->getResource($id)->getTarget());
+            $this->slides[] = new Slide($this->presentation->getResource($id));
         }
     }
 
@@ -117,38 +119,27 @@ class PPTX
     public function addSlide(Slide $slide)
     {
         $slide = clone $slide;
-        $slide->getXML()->setZipArchive($this->source);
         $slides[] = $slide;
-
-        // Copy slide
-
-        $slideName = $this->findAvailableName('ppt/slides/slide{x}.xml');
-        $slide->getXML()->rename(basename($slideName));
-        $this->addContentType('/'.$slideName);
 
         // Copy resources
 
-        foreach ($slide->getResource() as $resource) {
+        foreach ($slide->getResource()->getResources() as $resource) {
             $this->copyResource($resource);
         }
 
-        $slide->getXML()->save();
+        // Copy slide
+
+        $this->copyResource($slide->getResource());
 
         // Add references
 
-        $rId = $this->presentation->addResource('slides/'.basename($slideName), Resource::SLIDE);
+        $rId = $this->presentation->addResource($slide->getResource());
 
         $ref = $this->presentation->content->xpath('p:sldIdLst')[0]->addChild('sldId');
         $ref['id'] = '99999'; // todo: Voilà voilà
         $ref['r:id'] = $rId;
 
         $this->presentation->save();
-
-        // Dump
-
-        /*$dom = dom_import_simplexml($this->presentation->content)->ownerDocument;
-        $dom->formatOutput = true;
-        dump($dom->saveXML());*/
 
         return $this;
     }
@@ -158,21 +149,35 @@ class PPTX
         $filename = $this->findAvailableName($resource->getPatternPath());
         $resource->rename(basename($filename));
         $this->source->addFromString($resource->getAbsoluteTarget(), $resource->getContent());
-        $resource->setArchive($this->source);
-        
+        $resource->setZipArchive($this->source);
+
         $this->addContentType('/'.$resource->getAbsoluteTarget());
+
+        if ($resource instanceof XmlResource) {
+            $resource->save();
+        }
 
         return $this;
     }
 
-    public function addContentType($filename)
+    public function getContentType($filename)
     {
         if (pathinfo($filename)['extension'] === 'xml') {
             preg_match('/ppt\/.*?([a-z]+)[0-9]*\.xml/i', $filename, $fileType);
-            
-            $child = $this->contentTypes->addChild('Override');
+            return 'application/vnd.openxmlformats-officedocument.presentationml.'.$fileType[1].'+xml';
+        }
+
+        return '';
+    }
+
+    public function addContentType($filename)
+    {
+        $contentTypeString = $this->getContentType($filename);
+
+        if (!empty($contentTypeString)) {
+            $child = $this->contentTypes->content->addChild('Override');
             $child['PartName'] = $filename;
-            $child['ContentType'] = 'application/vnd.openxmlformats-officedocument.presentationml.'.$fileType[1].'+xml';
+            $child['ContentType'] = $contentTypeString;
 
             $this->contentTypes->save();
         }
@@ -194,15 +199,6 @@ class PPTX
         } while (!$available);
 
         return $filename;
-    }
-
-    /**
-     * @param $filename
-     * @return Slide
-     */
-    public function createSlideFromFile($filename)
-    {
-        return new Slide($this->readXmlFile($filename));
     }
 
     public function save()
