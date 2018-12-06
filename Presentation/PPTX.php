@@ -135,8 +135,10 @@ class PPTX
 
         $rId = $this->presentation->addResource($slide->getResource());
 
+        $currentSlides = $this->presentation->content->xpath('p:sldIdLst/p:sldId');
+
         $ref = $this->presentation->content->xpath('p:sldIdLst')[0]->addChild('sldId');
-        $ref['id'] = '99999'; // todo: Voilà voilà
+        $ref['id'] = intval(end($currentSlides)['id']) + 1;
         $ref['r:id'] = $rId;
 
         $this->presentation->save();
@@ -147,32 +149,19 @@ class PPTX
     public function copyResource(Resource $resource)
     {
         $filename = $this->findAvailableName($resource->getPatternPath());
-        $resource->rename(basename($filename));
-        $this->source->addFromString($resource->getAbsoluteTarget(), $resource->getContent());
-        $resource->setZipArchive($this->source);
 
+        $resource->rename(basename($filename));
+        $resource->setZipArchive($this->source);
         $this->addContentType('/'.$resource->getAbsoluteTarget());
 
-        if ($resource instanceof XmlResource) {
-            $resource->save();
-        }
+        $resource->save();
 
         return $this;
     }
 
-    public function getContentType($filename)
-    {
-        if (pathinfo($filename)['extension'] === 'xml') {
-            preg_match('/ppt\/.*?([a-z]+)[0-9]*\.xml/i', $filename, $fileType);
-            return 'application/vnd.openxmlformats-officedocument.presentationml.'.$fileType[1].'+xml';
-        }
-
-        return '';
-    }
-
     public function addContentType($filename)
     {
-        $contentTypeString = $this->getContentType($filename);
+        $contentTypeString = ContentType::getTypeFromFilename($filename);
 
         if (!empty($contentTypeString)) {
             $child = $this->contentTypes->content->addChild('Override');

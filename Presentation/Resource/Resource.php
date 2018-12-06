@@ -2,6 +2,7 @@
 
 namespace Cpro\Presentation\Resource;
 
+use Cpro\Presentation\ContentType;
 use ZipArchive;
 
 class Resource
@@ -53,7 +54,8 @@ class Resource
      */
     public static function createFromNode($resourceNode, $relativeFile, ZipArchive $zipArchive)
     {
-        return new static((string) $resourceNode['Target'], (string) $resourceNode['Type'], $relativeFile, $zipArchive);
+        $className = ContentType::getResourceClassFromFilename((string) $resourceNode['Target']);
+        return new $className((string) $resourceNode['Target'], (string) $resourceNode['Type'], $relativeFile, $zipArchive);
     }
 
     public function getContent()
@@ -142,5 +144,15 @@ class Resource
     public function setZipArchive(ZipArchive $zipArchive)
     {
         return $this->zipArchive = $zipArchive;
+    }
+
+    public function isDraft()
+    {
+        return $this->initialTarget !== $this->target || $this->initalZipArchive !== $this->zipArchive;
+    }
+
+    public function save()
+    {
+        $this->zipArchive->addFromString($this->getAbsoluteTarget(), $this->getContent());
     }
 }

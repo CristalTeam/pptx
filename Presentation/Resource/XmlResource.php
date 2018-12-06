@@ -2,6 +2,7 @@
 
 namespace Cpro\Presentation\Resource;
 
+use Cpro\Presentation\ContentType;
 use ZipArchive;
 
 class XmlResource extends Resource
@@ -21,6 +22,11 @@ class XmlResource extends Resource
         parent::__construct($target, $type, $relativeFile, $zipArchive);
 
         $this->content = new \SimpleXMLElement($this->initalZipArchive->getFromName($this->getInitialAbsoluteTarget()));
+    }
+
+    public function getContent()
+    {
+        return $this->content->asXml();
     }
 
     protected function getInitialRelsName()
@@ -50,23 +56,6 @@ class XmlResource extends Resource
         }
     }
 
-    /**
-     * @param            $resourceNode
-     * @param            $relativeFile
-     * @param ZipArchive $zipArchive
-     * @return static
-     */
-    public static function createFromNode($resourceNode, $relativeFile, ZipArchive $zipArchive)
-    {
-        if (pathinfo($resourceNode['Target'])['extension'] === 'xml') {
-            $className = static::class;
-        } else {
-            $className = parent::class;
-        }
-
-        return new $className((string) $resourceNode['Target'], (string) $resourceNode['Type'], $relativeFile, $zipArchive);
-    }
-
     public function getResources()
     {
         $this->mapResources();
@@ -94,7 +83,7 @@ class XmlResource extends Resource
 
     public function save()
     {
-        $this->zipArchive->addFromString($this->getAbsoluteTarget(), $this->content->asXml());
+        parent::save();
 
         if (!count($this->getResources())) {
             return;
@@ -107,11 +96,6 @@ class XmlResource extends Resource
             $relation['Type'] = $resource->getType();
             $relation['Target'] = $resource->getTarget();
         }
-
-        /*if($this->getAbsoluteTarget() == 'ppt/slides/slide2.xml'){
-            dd($this->getRelsName());
-            dump($this->getResources());
-        }*/
 
         $this->zipArchive->addFromString($this->getRelsName(), $resourceXML->asXml());
     }

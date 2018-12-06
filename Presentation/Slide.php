@@ -21,23 +21,7 @@ class Slide
     }
 
     /**
-     * @return string
-     */
-    public function getFilename()
-    {
-        return $this->xmlFile->getTarget();
-    }
-
-    /**
-     * @return string
-     */
-    public function getXML()
-    {
-        return $this->xmlFile;
-    }
-
-    /**
-     * @return Resource[]
+     * @return Resource
      */
     public function getResource()
     {
