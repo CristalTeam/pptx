@@ -147,6 +147,15 @@ class PPTX
         return $this;
     }
 
+    public function addSlides(array $slides)
+    {
+        foreach ($slides as $slide) {
+            $this->addSlide($slide);
+        }
+
+        return $this;
+    }
+
     public function copyResource(Resource $resource)
     {
         $filename = $this->findAvailableName($resource->getPatternPath());
