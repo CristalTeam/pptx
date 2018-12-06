@@ -2,6 +2,7 @@
 
 namespace Cpro\Presentation;
 
+use Cpro\Presentation\Resource\Slide;
 use ZipArchive;
 use Cpro\Presentation\Resource\XmlResource;
 use Cpro\Presentation\Resource\Resource;
@@ -100,7 +101,7 @@ class PPTX
 
         foreach ($this->presentation->content->xpath('p:sldIdLst/p:sldId') as $slide) {
             $id = $slide->xpath('@r:id')[0]['id'].'';
-            $this->slides[] = new Slide($this->presentation->getResource($id));
+            $this->slides[] = $this->presentation->getResource($id);
         }
     }
 
@@ -123,17 +124,17 @@ class PPTX
 
         // Copy resources
 
-        foreach ($slide->getResource()->getResources() as $resource) {
+        foreach ($slide->getResources() as $resource) {
             $this->copyResource($resource);
         }
 
         // Copy slide
 
-        $this->copyResource($slide->getResource());
+        $this->copyResource($slide);
 
         // Add references
 
-        $rId = $this->presentation->addResource($slide->getResource());
+        $rId = $this->presentation->addResource($slide);
 
         $currentSlides = $this->presentation->content->xpath('p:sldIdLst/p:sldId');
 

@@ -3,6 +3,7 @@
 namespace Cpro\Presentation;
 
 use Cpro\Presentation\Resource\Resource;
+use Cpro\Presentation\Resource\Slide;
 use Cpro\Presentation\Resource\SlideLayout;
 use Cpro\Presentation\Resource\XmlResource;
 
@@ -10,6 +11,7 @@ class ContentType
 {
     const CLASSES = [
         'application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml' => SlideLayout::class,
+        'application/vnd.openxmlformats-officedocument.presentationml.slide+xml' => Slide::class,
         'application/xml' => XmlResource::class,
         '_' => Resource::class,
     ];
