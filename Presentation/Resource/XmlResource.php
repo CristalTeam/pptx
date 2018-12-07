@@ -21,7 +21,14 @@ class XmlResource extends Resource
     {
         parent::__construct($target, $type, $relativeFile, $zipArchive);
 
-        $this->content = new \SimpleXMLElement($this->initalZipArchive->getFromName($this->getInitialAbsoluteTarget()));
+        $this->setContent($this->initalZipArchive->getFromName($this->getInitialAbsoluteTarget()));
+    }
+
+    public function setContent(string $content)
+    {
+        $this->content = new \SimpleXMLElement($content);
+
+        return $this;
     }
 
     public function getContent()

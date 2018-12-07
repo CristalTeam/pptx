@@ -200,6 +200,13 @@ class PPTX
         return $filename;
     }
 
+    public function template($data)
+    {
+        foreach ($this->getSlides() as $slide) {
+            $slide->template($data);
+        }
+    }
+
     public function save()
     {
         $this->source->close();
