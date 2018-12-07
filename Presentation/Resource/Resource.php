@@ -151,8 +151,20 @@ class Resource
         return $this->initialTarget !== $this->target || $this->initalZipArchive !== $this->zipArchive;
     }
 
-    public function save()
+    protected function performSave()
     {
         $this->zipArchive->addFromString($this->getAbsoluteTarget(), $this->getContent());
+    }
+
+    protected function syncInitials()
+    {
+        $this->initalZipArchive = $this->zipArchive;
+        $this->initialTarget = $this->target;
+    }
+
+    public function save()
+    {
+        $this->performSave();
+        $this->syncInitials();
     }
 }

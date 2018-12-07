@@ -81,9 +81,9 @@ class XmlResource extends Resource
         return 'rId'.(max($ids) + 1);
     }
 
-    public function save()
+    protected function performSave()
     {
-        parent::save();
+        parent::performSave();
 
         if (!count($this->getResources())) {
             return;

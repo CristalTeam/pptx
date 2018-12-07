@@ -120,7 +120,7 @@ class PPTX
     public function addSlide(Slide $slide)
     {
         $slide = clone $slide;
-        $slides[] = $slide;
+        $this->slides[] = $slide;
 
         // Copy resources
 

@@ -4,7 +4,7 @@ namespace Cpro\Presentation\Resource;
 
 class SlideLayout extends XmlResource
 {
-    public function save()
+    protected function performSave()
     {
         if ($this->isDraft()) {
             $slideMaster = new XmlResource('ppt/slideMasters/slideMaster1.xml', '', 'ppt/', $this->zipArchive);
@@ -16,6 +16,6 @@ class SlideLayout extends XmlResource
             $slideMaster->save();
         }
 
-        return parent::save();
+        return parent::performSave();
     }
 }
