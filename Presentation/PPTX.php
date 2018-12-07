@@ -17,12 +17,22 @@ class PPTX
     /**
      * @var Slide[]
      */
-    protected $slides;
+    protected $slides = [];
 
     /**
-     * @var XmlFile
+     * @var XmlResource
      */
     protected $presentation;
+
+    /**
+     * @var string
+     */
+    protected $filename;
+
+    /**
+     * @var string
+     */
+    protected $tmpName;
 
     /**
      * Presentation constructor.
@@ -31,7 +41,14 @@ class PPTX
      */
     public function __construct($filename)
     {
-        $this->openFile($filename);
+        $this->filename = $filename;
+
+        // Create tmp copy
+        $this->tmpName = tempnam(sys_get_temp_dir(), 'PPTX_');
+        copy($filename, $this->tmpName);
+
+        // Open copy
+        $this->openFile($this->tmpName);
     }
 
     /**
@@ -96,9 +113,9 @@ class PPTX
      */
     protected function loadSlides()
     {
-        $this->presentation = $this->readXmlFile('ppt/presentation.xml');
         $this->slides = [];
 
+        $this->presentation = $this->readXmlFile('ppt/presentation.xml');
         foreach ($this->presentation->content->xpath('p:sldIdLst/p:sldId') as $slide) {
             $id = $slide->xpath('@r:id')[0]['id'].'';
             $this->slides[] = $this->presentation->getResource($id);
@@ -207,8 +224,21 @@ class PPTX
         }
     }
 
-    public function save()
+    public function saveAs($filename)
     {
         $this->source->close();
+        copy($this->tmpName, $filename);
+        $this->openFile($this->tmpName);
+    }
+
+    public function save()
+    {
+        $this->saveAs($this->filename);
+    }
+
+    public function __destruct()
+    {
+        $this->source->close();
+        unlink($this->tmpName);
     }
 }
