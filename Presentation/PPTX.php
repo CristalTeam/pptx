@@ -2,6 +2,7 @@
 
 namespace Cpro\Presentation;
 
+use Cpro\Presentation\Exception\FileOpenException;
 use Cpro\Presentation\Resource\Slide;
 use ZipArchive;
 use Cpro\Presentation\Resource\XmlResource;
@@ -36,6 +37,7 @@ class PPTX
 
     /**
      * Presentation constructor.
+     *
      * @param $filename
      * @throws \Exception
      */
@@ -52,7 +54,7 @@ class PPTX
     }
 
     /**
-     * Open PPTX file
+     * Open PPTX file.
      *
      * @param $filename
      * @return $this
@@ -90,7 +92,7 @@ class PPTX
                 22 => 'Can\'t remove file',
                 23 => 'Entry has been deleted',
             ];
-            throw new \Exception($errors[$res] ?? 'Cannot open PPTX file, error '.$res.'.');
+            throw new FileOpenException($errors[$res] ?? 'Cannot open PPTX file, error '.$res.'.');
         }
 
         $this->contentTypes = $this->readXmlFile('[Content_Types].xml');
@@ -100,16 +102,20 @@ class PPTX
     }
 
     /**
-     * @param $file
+     * Create an XmlResource from a filename in the current presentation.
+     *
+     * @filename Path to the file
      * @return XmlResource
      */
-    protected function readXmlFile($file, $type = '')
+    protected function readXmlFile($filename)
     {
-        return new XmlResource($file, $type, 'ppt/', $this->source);
+        return new XmlResource($filename, '', 'ppt/', $this->source);
     }
 
     /**
-     * Read existing slides
+     * Read existing slides.
+     *
+     * @return static
      */
     protected function loadSlides()
     {
@@ -120,9 +126,13 @@ class PPTX
             $id = $slide->xpath('@r:id')[0]['id'].'';
             $this->slides[] = $this->presentation->getResource($id);
         }
+
+        return $this;
     }
 
     /**
+     * Get all slides available in the current presentation.
+     *
      * @return Slide[]
      */
     public function getSlides()
@@ -131,8 +141,10 @@ class PPTX
     }
 
     /**
+     * Import a single slide object.
+     *
      * @param Slide $slide
-     * @return PPTX
+     * @return static
      */
     public function addSlide(Slide $slide)
     {
@@ -164,6 +176,12 @@ class PPTX
         return $this;
     }
 
+    /**
+     * Import multiple slides object.
+     *
+     * @param array $slides
+     * @return $this
+     */
     public function addSlides(array $slides)
     {
         foreach ($slides as $slide) {
@@ -173,6 +191,12 @@ class PPTX
         return $this;
     }
 
+    /**
+     * Store resource into current presentation.
+     *
+     * @param Resource $resource
+     * @return $this
+     */
     public function copyResource(Resource $resource)
     {
         $filename = $this->findAvailableName($resource->getPatternPath());
@@ -186,6 +210,11 @@ class PPTX
         return $this;
     }
 
+    /**
+     * Add content type to the presentation from a filename.
+     *
+     * @param $filename
+     */
     public function addContentType($filename)
     {
         $contentTypeString = ContentType::getTypeFromFilename($filename);
@@ -217,6 +246,11 @@ class PPTX
         return $filename;
     }
 
+    /**
+     * Fill data to each slide.
+     *
+     * @param $data
+     */
     public function template($data)
     {
         foreach ($this->getSlides() as $slide) {
@@ -224,13 +258,24 @@ class PPTX
         }
     }
 
-    public function saveAs($filename)
+    /**
+     * Save
+     *
+     * @param $target
+     * @throws \Exception
+     */
+    public function saveAs($target)
     {
         $this->source->close();
-        copy($this->tmpName, $filename);
+        copy($this->tmpName, $target);
         $this->openFile($this->tmpName);
     }
 
+    /**
+     * Overwrites the open file with the news.
+     *
+     * @throws \Exception
+     */
     public function save()
     {
         $this->saveAs($this->filename);

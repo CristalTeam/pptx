@@ -4,6 +4,12 @@ namespace Cpro\Presentation\Resource;
 
 class Slide extends XmlResource
 {
+    /**
+     * @param        $key
+     * @param        $data
+     * @param string $default
+     * @return string
+     */
     protected function findDataRecursively($key, $data, $default = '')
     {
         foreach (explode('_', $key) as $segment) {
@@ -17,6 +23,11 @@ class Slide extends XmlResource
         return $data;
     }
 
+    /**
+     * Fill data to the slide.
+     *
+     * @param array $data
+     */
     public function template(array $data)
     {
         $xmlString = $this->getContent();

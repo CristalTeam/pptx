@@ -4,6 +4,9 @@ namespace Cpro\Presentation\Resource;
 
 class SlideLayout extends XmlResource
 {
+    /**
+     * {@inheritdoc}
+     */
     protected function performSave()
     {
         if ($this->isDraft()) {

@@ -3,6 +3,7 @@
 namespace Cpro\Presentation\Resource;
 
 use Cpro\Presentation\ContentType;
+use Cpro\Presentation\Exception\InvalidFileNameException;
 use ZipArchive;
 
 class Resource
@@ -36,8 +37,14 @@ class Resource
      */
     protected $initalZipArchive;
 
-    const SLIDE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide';
-
+    /**
+     * Resource constructor.
+     *
+     * @param                 $target
+     * @param                 $type
+     * @param string          $relativeFile
+     * @param null|ZipArchive $zipArchive
+     */
     public function __construct($target, $type, $relativeFile = '', ?ZipArchive $zipArchive = null)
     {
         $this->initialTarget = $this->target = $target;
@@ -47,6 +54,8 @@ class Resource
     }
 
     /**
+     * Create an instance of Resource based on a XML rels node.
+     *
      * @param            $resourceNode
      * @param            $relativeFile
      * @param ZipArchive $zipArchive
@@ -58,12 +67,23 @@ class Resource
         return new $className((string) $resourceNode['Target'], (string) $resourceNode['Type'], $relativeFile, $zipArchive);
     }
 
+    /**
+     * Get current content file from initial zip archive.
+     *
+     * @return string
+     */
     public function getContent()
     {
         return $this->initalZipArchive->getFromName($this->getInitialAbsoluteTarget());
     }
 
-    public function resolveAbsolutePath($path)
+    /**
+     * Calculate an absolute path from a relative path.
+     *
+     * @param $path
+     * @return string
+     */
+    public static function resolveAbsolutePath($path)
     {
         $parts = array_filter(explode('/', $path), 'strlen');
         $absolutes = [];
@@ -80,26 +100,42 @@ class Resource
         return implode('/', $absolutes);
     }
 
+    /**
+     * Get absolute target, calculate on current target.
+     *
+     * @return string
+     */
     public function getAbsoluteTarget()
     {
         $path = dirname($this->relativeFile).'/'.ltrim($this->getTarget(), '/');
-        return $this->resolveAbsolutePath($path);
+        return static::resolveAbsolutePath($path);
     }
 
+    /**
+     * Get initial absolute target, calculate on current target.
+     *
+     * @return string
+     */
     public function getInitialAbsoluteTarget()
     {
         $path = dirname($this->relativeFile).'/'.ltrim($this->getInitialTarget(), '/');
-        return $this->resolveAbsolutePath($path);
+        return static::resolveAbsolutePath($path);
     }
 
+    /**
+     * Get pattern from filename.
+     * Example, it returns 'ppt/slides/slide{x}.xml' for a filename like this ppt/slides/slide1.xml
+     *
+     * @return null|string|string[]
+     */
     public function getPatternPath()
     {
         return preg_replace('#([^/])[0-9]+?\.(.*?)$#', '$1{x}.$2', $this->getAbsoluteTarget());
     }
 
-    //public function
-
     /**
+     * Get initial target file.
+     *
      * @return string
      */
     public function getInitialTarget()
@@ -107,9 +143,9 @@ class Resource
         return $this->initialTarget;
     }
 
-    //public function
-
     /**
+     * Get current target file.
+     *
      * @return string
      */
     public function getTarget()
@@ -118,6 +154,8 @@ class Resource
     }
 
     /**
+     * Rename current Resource.
+     *
      * @param $filename
      * @return $this
      * @throws \Exception
@@ -125,7 +163,7 @@ class Resource
     public function rename($filename)
     {
         if (preg_match('#/#', $filename)) {
-            throw new \Exception('Filename can not be a a path.');
+            throw new InvalidFileNameException('Filename can not be a a path.');
         }
 
         $this->target = dirname($this->target).'/'.$filename;
@@ -134,6 +172,8 @@ class Resource
     }
 
     /**
+     * Return current ContentType value.
+     *
      * @return string
      */
     public function getType()
@@ -141,27 +181,47 @@ class Resource
         return $this->type;
     }
 
+    /**
+     * Set a new zip archive for work.
+     *
+     * @param ZipArchive $zipArchive
+     * @return ZipArchive
+     */
     public function setZipArchive(ZipArchive $zipArchive)
     {
         return $this->zipArchive = $zipArchive;
     }
 
+    /**
+     * Check if the current file has been moved.
+     *
+     * @return bool
+     */
     public function isDraft()
     {
         return $this->initialTarget !== $this->target || $this->initalZipArchive !== $this->zipArchive;
     }
 
-    protected function performSave()
-    {
-        $this->zipArchive->addFromString($this->getAbsoluteTarget(), $this->getContent());
-    }
-
+    /**
+     * Reset initials with current values.
+     */
     protected function syncInitials()
     {
         $this->initalZipArchive = $this->zipArchive;
         $this->initialTarget = $this->target;
     }
 
+    /**
+     *  Save current Resource.
+     */
+    protected function performSave()
+    {
+        $this->zipArchive->addFromString($this->getAbsoluteTarget(), $this->getContent());
+    }
+
+    /**
+     * Save current Resource and syncInitials.
+     */
     public function save()
     {
         $this->performSave();
