@@ -1,0 +1,14 @@
+{
+    "name": "cpro/pptx",
+    "authors": [
+        {
+            "name": "Camille Baronnet",
+            "email": "c.baronnet@cpro.fr"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Cpro\\Presentation\\": "Presentation"
+        }
+    }
+}
