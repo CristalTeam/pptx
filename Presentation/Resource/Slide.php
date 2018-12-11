@@ -2,6 +2,8 @@
 
 namespace Cpro\Presentation\Resource;
 
+use Closure;
+
 class Slide extends XmlResource
 {
     /**
@@ -26,15 +28,22 @@ class Slide extends XmlResource
     /**
      * Fill data to the slide.
      *
-     * @param array $data
+     * @param array|\Closure $data
      */
-    public function template(array $data)
+    public function template($data)
     {
-        $xmlString = $this->getContent();
+        if (!$data instanceof Closure) {
+            $data = function ($matches) use ($data) {
+                return $this->findDataRecursively($matches['needle'], $data);
+            };
+        }
 
-        $xmlString = preg_replace_callback('/(\{\{)((\<(.*?)\>)+)?(?P<needle>.*?)((\<(.*?)\>)+)?(\}\})/mi', function ($matches) use ($data) {
-            return $this->findDataRecursively($matches['needle'], $data);
-        }, $xmlString);
+        $xmlString = $this->getContent();
+        $xmlString = preg_replace_callback(
+            '/(\{\{)((\<(.*?)\>)+)?(?P<needle>.*?)((\<(.*?)\>)+)?(\}\})/mi',
+            $data,
+            $xmlString
+        );
 
         $this->setContent($xmlString);
 

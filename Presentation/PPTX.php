@@ -256,7 +256,7 @@ class PPTX
     /**
      * Fill data to each slide.
      *
-     * @param $data
+     * @param array|\Closure $data
      */
     public function template($data)
     {
