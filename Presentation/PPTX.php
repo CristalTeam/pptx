@@ -172,8 +172,15 @@ class PPTX
         $ref['r:id'] = $rId;
 
         $this->presentation->save();
+        $this->refreshSource();
 
         return $this;
+    }
+
+    protected function refreshSource()
+    {
+        $this->source->close();
+        $this->openFile($this->tmpName);
     }
 
     /**
