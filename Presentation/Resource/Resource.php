@@ -78,6 +78,18 @@ class Resource
     }
 
     /**
+     * @param string $content
+     *
+     * @return self
+     */
+    public function setContent(string $content)
+    {
+        $this->zipArchive->addFromString($this->getAbsoluteTarget(), $content);
+
+        return $this;
+    }
+
+    /**
      * Calculate an absolute path from a relative path.
      *
      * @param $path

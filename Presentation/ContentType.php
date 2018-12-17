@@ -2,6 +2,7 @@
 
 namespace Cpro\Presentation;
 
+use Cpro\Presentation\Resource\Image;
 use Cpro\Presentation\Resource\Resource;
 use Cpro\Presentation\Resource\Slide;
 use Cpro\Presentation\Resource\SlideLayout;
@@ -16,6 +17,7 @@ class ContentType
         'application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml' => SlideLayout::class,
         'application/vnd.openxmlformats-officedocument.presentationml.slide+xml' => Slide::class,
         'application/xml' => XmlResource::class,
+        'application/image' => Image::class,
         '_' => Resource::class,
     ];
 
@@ -24,6 +26,7 @@ class ContentType
      */
     private function __construct()
     {
+        //
     }
 
     /**
@@ -34,9 +37,14 @@ class ContentType
      */
     static public function getTypeFromFilename($filename)
     {
-        if (pathinfo($filename)['extension'] === 'xml') {
+        $extension = pathinfo($filename)['extension'];
+        if ($extension === 'xml') {
             preg_match('/([a-z]+)[0-9]*\.xml$/i', $filename, $fileType);
             return 'application/vnd.openxmlformats-officedocument.presentationml.'.$fileType[1].'+xml';
+        }
+
+        if (in_array($extension, ['png', 'gif', 'jpg', 'jpeg'])) {
+            return 'application/image';
         }
 
         return '';

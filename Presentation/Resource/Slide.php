@@ -10,6 +10,7 @@ class Slide extends XmlResource
      * @param        $key
      * @param        $data
      * @param string $default
+     *
      * @return string
      */
     protected function findDataRecursively($key, $data, $default = '')
@@ -48,5 +49,37 @@ class Slide extends XmlResource
         $this->setContent($xmlString);
 
         $this->save();
+    }
+
+    /**
+     * Update the images in the slide.
+     *
+     * @param array $data The key should match the descr attribute, the value is the raw content of the image
+     */
+    public function images(array $data)
+    {
+        foreach ($data as $key => $content) {
+            $idx = $this->getImagesId($key);
+            foreach ($idx as $id) {
+                $image = $this->getResource($id);
+                $image->setContent($content);
+            }
+        }
+    }
+
+    /**
+     * Gets the images identifier.
+     *
+     * @param string $key
+     *
+     * @return array
+     */
+    public function getImagesId(string $key)
+    {
+        $nodes = $this->content->xpath("//p:cNvPr[@descr='$key']/../../p:blipFill/a:blip/@r:embed");
+
+        return array_map(function ($node) {
+            return (string) $node->embed;
+        }, $nodes);
     }
 }

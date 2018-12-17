@@ -152,17 +152,14 @@ class PPTX
         $this->slides[] = $slide;
 
         // Copy resources
-
         foreach ($slide->getResources() as $resource) {
             $this->copyResource($resource);
         }
 
         // Copy slide
-
         $this->copyResource($slide);
 
         // Add references
-
         $rId = $this->presentation->addResource($slide);
 
         $currentSlides = $this->presentation->content->xpath('p:sldIdLst/p:sldId');
@@ -262,6 +259,18 @@ class PPTX
     {
         foreach ($this->getSlides() as $slide) {
             $slide->template($data);
+        }
+    }
+
+    /**
+     * Update the images in the slide.
+     *
+     * @param array $data The key should match the descr attribute, the value is the raw content of the image
+     */
+    public function images(array $data)
+    {
+        foreach ($this->getSlides() as $slide) {
+            $slide->images($data);
         }
     }
 

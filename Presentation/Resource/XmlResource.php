@@ -91,7 +91,11 @@ class XmlResource extends Resource
             }
             $resources = new \SimpleXMLElement($content);
             foreach ($resources as $resource) {
-                $this->resources[(string) $resource['Id']] = static::createFromNode($resource, $this->getInitialAbsoluteTarget(), $this->initalZipArchive);
+                $this->resources[(string) $resource['Id']] = static::createFromNode(
+                    $resource,
+                    $this->getInitialAbsoluteTarget(),
+                    $this->initalZipArchive
+                );
             }
         }
     }
