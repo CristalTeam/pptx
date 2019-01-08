@@ -254,24 +254,30 @@ class PPTX
      * Fill data to each slide.
      *
      * @param array|\Closure $data
+     * @return self
      */
-    public function template($data)
+    public function template($data): self
     {
         foreach ($this->getSlides() as $slide) {
             $slide->template($data);
         }
+
+        return $this;
     }
 
     /**
      * Update the images in the slide.
      *
-     * @param array $data The key should match the descr attribute, the value is the raw content of the image
+     * @param $data The key should match the descr attribute, the value is the raw content of the image
+     * @return self
      */
-    public function images(array $data)
+    public function images($data): self
     {
         foreach ($this->getSlides() as $slide) {
             $slide->images($data);
         }
+
+        return $this;
     }
 
     /**

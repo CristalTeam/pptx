@@ -54,32 +54,39 @@ class Slide extends XmlResource
     /**
      * Update the images in the slide.
      *
-     * @param array $data The key should match the descr attribute, the value is the raw content of the image
+     * @param array|Closure $data
      */
-    public function images(array $data)
+    public function images($data)
     {
-        foreach ($data as $key => $content) {
-            $idx = $this->getImagesId($key);
-            foreach ($idx as $id) {
-                $image = $this->getResource($id);
-                $image->setContent($content);
+        if (!$data instanceof Closure) {
+            $data = function ($key) use ($data) {
+                return $data[$key] ?? null;
+            };
+        }
+
+        foreach ($this->getTemplateImages() as $id => $key) {
+            if ($data($key) !== null) {
+                $this->getResource($id)->setContent($data($key));
             }
         }
     }
 
     /**
-     * Gets the images identifier.
-     *
-     * @param string $key
+     * Gets the image identifiers capable to being templated
      *
      * @return array
      */
-    public function getImagesId(string $key)
+    public function getTemplateImages()
     {
-        $nodes = $this->content->xpath("//p:cNvPr[@descr='$key']/../../p:blipFill/a:blip/@r:embed");
+        $nodes = $this->content->xpath("//p:pic");
 
-        return array_map(function ($node) {
-            return (string) $node->embed;
-        }, $nodes);
+        foreach ($nodes as $node) {
+            $id = (string) $node->xpath('p:blipFill/a:blip/@r:embed')[0]->embed;
+            $key = $node->xpath('p:nvPicPr/p:cNvPr/@descr');
+
+            if ($key && isset($key[0]) && $key[0]->descr) {
+                yield $id => (string) $key[0]->descr;
+            }
+        }
     }
 }
