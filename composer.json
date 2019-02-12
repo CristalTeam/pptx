@@ -10,5 +10,13 @@
         "psr-4": {
             "Cpro\\Presentation\\": "Presentation"
         }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Cpro\\Presentation\\Tests\\": "tests"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^7"
     }
 }
