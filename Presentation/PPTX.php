@@ -3,10 +3,11 @@
 namespace Cpro\Presentation;
 
 use Cpro\Presentation\Exception\FileOpenException;
-use Cpro\Presentation\Resource\Slide;
-use ZipArchive;
-use Cpro\Presentation\Resource\XmlResource;
+use Cpro\Presentation\Exception\FileSaveException;
 use Cpro\Presentation\Resource\Resource;
+use Cpro\Presentation\Resource\Slide;
+use Cpro\Presentation\Resource\XmlResource;
+use ZipArchive;
 
 class PPTX
 {
@@ -45,8 +46,13 @@ class PPTX
     {
         $this->filename = $filename;
 
+        if (!file_exists($filename)) {
+            throw new FileOpenException("Unable to open the source PPTX. Path does not exist.");
+        }
+
         // Create tmp copy
         $this->tmpName = tempnam(sys_get_temp_dir(), 'PPTX_');
+
         copy($filename, $this->tmpName);
 
         // Open copy
@@ -176,7 +182,7 @@ class PPTX
 
     protected function refreshSource()
     {
-        $this->source->close();
+        $this->close();
         $this->openFile($this->tmpName);
     }
 
@@ -288,8 +294,12 @@ class PPTX
      */
     public function saveAs($target)
     {
-        $this->source->close();
-        copy($this->tmpName, $target);
+        $this->close();
+
+        if (!copy($this->tmpName, $target)) {
+            throw new FileSaveException("Unable to save the final PPTX. Error during the copying.");
+        }
+
         $this->openFile($this->tmpName);
     }
 
@@ -305,7 +315,14 @@ class PPTX
 
     public function __destruct()
     {
-        $this->source->close();
+        $this->close();
         unlink($this->tmpName);
+    }
+
+    protected function close()
+    {
+        if (!@$this->source->close()) {
+            throw new FileSaveException("Unable to close the source PPTX");
+        }
     }
 }
