@@ -47,6 +47,7 @@ class PPTX
         $this->filename = $filename;
 
         if (!file_exists($filename)) {
+            dd($filename);
             throw new FileOpenException("Unable to open the source PPTX. Path does not exist.");
         }
 
@@ -266,6 +267,15 @@ class PPTX
     {
         foreach ($this->getSlides() as $slide) {
             $slide->template($data);
+        }
+
+        return $this;
+    }
+
+    public function table(\Closure $data)
+    {
+        foreach ($this->getSlides() as $slide) {
+            $slide->table($data);
         }
 
         return $this;
