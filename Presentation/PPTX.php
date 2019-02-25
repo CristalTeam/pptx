@@ -272,10 +272,10 @@ class PPTX
         return $this;
     }
 
-    public function table(\Closure $data)
+    public function table(\Closure $data, \Closure $finder)
     {
         foreach ($this->getSlides() as $slide) {
-            $slide->table($data);
+            $slide->table($data, $finder);
         }
 
         return $this;

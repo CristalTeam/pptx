@@ -78,8 +78,14 @@ class Slide extends XmlResource
     /**
      * @param Closure $data
      */
-    public function table(Closure $data)
+    public function table(Closure $data, Closure $finder = null)
     {
+        if (!$finder) {
+            $finder = function (string $needle, array $row) : string {
+                return $this->findDataRecursively($needle, $row);
+            };
+        }
+
         $tables = $this->content->xpath('//a:tbl/../../../p:nvGraphicFramePr/p:cNvPr');
         foreach ($tables as $table) {
             $tableId = (string) $table->attributes()['name'];
@@ -93,11 +99,11 @@ class Slide extends XmlResource
 
             $xml = preg_replace_callback(
                 '/<([^>]+:?'.self::TABLE_ROW_TEMPLATE_NAME.'([\d])+\/>?)/',
-                function ($matches) use ($tableRow, $rows) {
+                function ($matches) use ($tableRow, $rows, $finder) {
                     [,,$rowId] = $matches;
 
-                    return $this->replaceNeedle($tableRow->asXML(), function ($matches) use ($rows, $rowId) {
-                        return $this->findDataRecursively($matches['needle'], $rows[$rowId]);
+                    return $this->replaceNeedle($tableRow->asXML(), function ($matches) use ($rows, $rowId, $finder) {
+                        return $finder($matches['needle'], $rows[$rowId]);
                     });
                 },
                 $this->content->asXML()
