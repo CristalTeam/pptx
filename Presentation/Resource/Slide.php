@@ -65,14 +65,16 @@ class Slide extends XmlResource
     protected function replaceNeedle(string $source, Closure $callback): string
     {
         $sanitizer = function ($matches) use ($callback) {
-            return htmlentities($callback($matches));
+            return htmlspecialchars($callback($matches));
         };
 
-        return preg_replace_callback(
+        $r = preg_replace_callback(
             '/(\{\{)((\<(.*?)\>)+)?(?P<needle>.*?)((\<(.*?)\>)+)?(\}\})/mi',
             $sanitizer,
             $source
         );
+
+        return $r;
     }
 
     /**
@@ -92,6 +94,9 @@ class Slide extends XmlResource
             $tableRow = $this->content->xpath("//p:cNvPr[@name='$tableId']/../..//a:tr")[1];
             $table = $tableRow->xpath('..')[0];
             $rows = $data($tableId);
+            if (!$rows) {
+                continue;
+            }
 
             foreach ($rows as $index => $row) {
                 $table->addChild(self::TABLE_ROW_TEMPLATE_NAME.$index);
@@ -147,8 +152,7 @@ class Slide extends XmlResource
         foreach ($nodes as $node) {
             $id = (string) $node->xpath('p:blipFill/a:blip/@r:embed')[0]->embed;
             $key = $node->xpath('p:nvPicPr/p:cNvPr/@descr');
-
-            if ($key && isset($key[0]) && $key[0]->descr) {
+            if ($key && isset($key[0]) && !empty($key[0]->descr)) {
                 yield $id => (string) $key[0]->descr;
             }
         }

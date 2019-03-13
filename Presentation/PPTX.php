@@ -36,10 +36,13 @@ class PPTX
      */
     protected $tmpName;
 
+    protected $cachedFilename = [];
+
     /**
      * Presentation constructor.
      *
      * @param $filename
+     *
      * @throws \Exception
      */
     public function __construct($filename)
@@ -47,8 +50,7 @@ class PPTX
         $this->filename = $filename;
 
         if (!file_exists($filename)) {
-            dd($filename);
-            throw new FileOpenException("Unable to open the source PPTX. Path does not exist.");
+            throw new FileOpenException('Unable to open the source PPTX. Path does not exist.');
         }
 
         // Create tmp copy
@@ -58,18 +60,27 @@ class PPTX
 
         // Open copy
         $this->openFile($this->tmpName);
+
+        for ($i = 0; $i < $this->source->numFiles; ++$i) {
+            $filenameParts = pathinfo($this->source->statIndex($i)['name']);
+            if (isset($filenameParts['dirname']) && isset($filenameParts['filename'])) {
+                $this->cachedFilename[] = $filenameParts['dirname'].'/'.$filenameParts['filename'];
+            }
+        }
     }
 
     /**
      * Open PPTX file.
      *
      * @param $filename
+     *
      * @return $this
+     *
      * @throws \Exception
      */
     public function openFile(string $filename)
     {
-        $this->source = new ZipArchive;
+        $this->source = new ZipArchive();
         $res = $this->source->open($filename);
 
         if ($res !== true) {
@@ -112,6 +123,7 @@ class PPTX
      * Create an XmlResource from a filename in the current presentation.
      *
      * @filename Path to the file
+     *
      * @return XmlResource
      */
     protected function readXmlFile($filename)
@@ -151,6 +163,7 @@ class PPTX
      * Import a single slide object.
      *
      * @param Slide $slide
+     *
      * @return static
      */
     public function addSlide(Slide $slide)
@@ -191,6 +204,7 @@ class PPTX
      * Import multiple slides object.
      *
      * @param array $slides
+     *
      * @return $this
      */
     public function addSlides(array $slides)
@@ -205,7 +219,8 @@ class PPTX
     /**
      * Store resource into current presentation.
      *
-     * @param Resource $resource
+     * @param resource $resource
+     *
      * @return $this
      */
     public function copyResource(Resource $resource)
@@ -242,17 +257,25 @@ class PPTX
     /**
      * Find an available filename based on a pattern.
      *
-     * @param     $pattern  A string contains '{x}' as an index replaced by a incremental number.
-     * @param int $start Beginning index default is 1.
+     * @param     $pattern a string contains '{x}' as an index replaced by a incremental number
+     * @param int $start   beginning index default is 1
+     *
      * @return mixed
      */
     protected function findAvailableName($pattern, $start = 1)
     {
         do {
             $filename = str_replace('{x}', $start, $pattern);
-            $available = $this->source->locateName($filename) == false;
-            $start++;
-        } while (!$available);
+            $filenameParts = pathinfo($filename);
+
+            $filenameWithoutExtension = $filenameParts['dirname'].'/'.$filenameParts['filename'];
+            if(!in_array($filenameWithoutExtension, $this->cachedFilename)) {
+                $this->cachedFilename[] = $filenameWithoutExtension;
+                break;
+            }
+
+            ++$start;
+        } while (true);
 
         return $filename;
     }
@@ -261,6 +284,7 @@ class PPTX
      * Fill data to each slide.
      *
      * @param array|\Closure $data
+     *
      * @return self
      */
     public function template($data): self
@@ -285,6 +309,7 @@ class PPTX
      * Update the images in the slide.
      *
      * @param $data The key should match the descr attribute, the value is the raw content of the image
+     *
      * @return self
      */
     public function images($data): self
@@ -297,9 +322,10 @@ class PPTX
     }
 
     /**
-     * Save
+     * Save.
      *
      * @param $target
+     *
      * @throws \Exception
      */
     public function saveAs($target)
@@ -307,7 +333,7 @@ class PPTX
         $this->close();
 
         if (!copy($this->tmpName, $target)) {
-            throw new FileSaveException("Unable to save the final PPTX. Error during the copying.");
+            throw new FileSaveException('Unable to save the final PPTX. Error during the copying.');
         }
 
         $this->openFile($this->tmpName);
@@ -332,7 +358,7 @@ class PPTX
     protected function close()
     {
         if (!@$this->source->close()) {
-            throw new FileSaveException("Unable to close the source PPTX");
+            throw new FileSaveException('Unable to close the source PPTX');
         }
     }
 }

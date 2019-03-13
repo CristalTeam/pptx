@@ -35,7 +35,7 @@ class ContentType
      * @param $filename
      * @return string
      */
-    static public function getTypeFromFilename($filename)
+    public static function getTypeFromFilename($filename)
     {
         $extension = pathinfo($filename)['extension'];
         if ($extension === 'xml') {
@@ -56,7 +56,7 @@ class ContentType
      * @param $contentType
      * @return mixed
      */
-    static public function getResourceClassFromType($contentType)
+    public static function getResourceClassFromType($contentType)
     {
         if (isset(static::CLASSES[$contentType])) {
             return static::CLASSES[$contentType];
@@ -71,7 +71,7 @@ class ContentType
      * @param $filename
      * @return mixed
      */
-    static public function getResourceClassFromFilename($filename)
+    public static function getResourceClassFromFilename($filename)
     {
         $contentType = static::getTypeFromFilename($filename);
 
