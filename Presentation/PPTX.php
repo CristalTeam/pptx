@@ -309,7 +309,7 @@ class PPTX
     /**
      * Update the images in the slide.
      *
-     * @param $data The key should match the descr attribute, the value is the raw content of the image
+     * @param $data mixed Closure or array which returns: key should match the descr attribute, value is the raw content of the image
      *
      * @return self
      */
