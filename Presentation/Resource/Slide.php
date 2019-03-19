@@ -134,8 +134,8 @@ class Slide extends XmlResource
         }
 
         foreach ($this->getTemplateImages() as $id => $key) {
-            if ($data($key) !== null) {
-                $this->getResource($id)->setContent($data($key));
+            if (($content = $data($key)) !== null) {
+                $this->getResource($id)->setContent($content);
             }
         }
     }

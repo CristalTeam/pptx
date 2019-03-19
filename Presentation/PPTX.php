@@ -222,6 +222,7 @@ class PPTX
      * @param resource $resource
      *
      * @return $this
+     * @throws \Exception
      */
     public function copyResource(Resource $resource)
     {
@@ -326,6 +327,7 @@ class PPTX
      *
      * @param $target
      *
+     * @throws FileSaveException
      * @throws \Exception
      */
     public function saveAs($target)
@@ -349,12 +351,18 @@ class PPTX
         $this->saveAs($this->filename);
     }
 
+    /**
+     * @throws FileSaveException
+     */
     public function __destruct()
     {
         $this->close();
         unlink($this->tmpName);
     }
 
+    /**
+     * @throws FileSaveException
+     */
     protected function close()
     {
         if (!@$this->source->close()) {
