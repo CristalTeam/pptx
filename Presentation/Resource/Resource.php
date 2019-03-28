@@ -38,6 +38,11 @@ class Resource
     protected $initalZipArchive;
 
     /**
+     * @var null|string
+     */
+    protected $customContent = null;
+
+    /**
      * Resource constructor.
      *
      * @param                 $target
@@ -74,7 +79,7 @@ class Resource
      */
     public function getContent()
     {
-        return $this->initalZipArchive->getFromName($this->getInitialAbsoluteTarget());
+        return $this->customContent ?? $this->initalZipArchive->getFromName($this->getInitialAbsoluteTarget());
     }
 
     /**
@@ -84,6 +89,7 @@ class Resource
      */
     public function setContent(string $content)
     {
+        $this->customContent = $content;
         $this->zipArchive->addFromString($this->getAbsoluteTarget(), $content);
 
         return $this;

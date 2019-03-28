@@ -155,6 +155,7 @@ class XmlResource extends Resource
 
         $resourceXML = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>');
         foreach ($this->resources as $id => $resource) {
+
             $relation = $resourceXML->addChild('Relationship');
             $relation['Id'] = $id;
             $relation['Type'] = $resource->getType();
