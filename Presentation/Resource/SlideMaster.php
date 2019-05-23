@@ -2,6 +2,8 @@
 
 namespace Cpro\Presentation\Resource;
 
+use SimpleXMLElement;
+
 /**
  * Class SlideMaster
  * @package Cpro\Presentation\Resource
@@ -46,13 +48,13 @@ class SlideMaster extends XmlResource
     }
 
     /**
-     *
+     * @return void
      */
     protected function optimizeIds()
     {
         $backupResources = $this->getResources();
 
-        // Get slides liste from XML
+        // Get slides liste from XML.
 
         $currentLayers = $this->content->xpath('p:sldLayoutIdLst/p:sldLayoutId');
         $ids = [];
@@ -61,13 +63,13 @@ class SlideMaster extends XmlResource
             $ids[strval($item['id'])] = strval($item->attributes($namespaces['r'])['id']);
         }
 
-        // Delete resources layoutes from _rels file
+        // Delete resources layoutes from _rels file.
 
         $resources = array_filter($backupResources, function ($rId) use ($ids){
             return !in_array($rId, $ids);
         }, ARRAY_FILTER_USE_KEY);
 
-        // Recreate resources list
+        // Recreate resources list.
 
         $this->clearResources();
         $rIdsOldArray = [];
@@ -81,10 +83,13 @@ class SlideMaster extends XmlResource
         }
     }
 
+    /**
+     * @return void
+     */
     protected function clearResources()
     {
         $this->resources = [];
-        $resourceXML = new \SimpleXMLElement(static::RELS_XML);
+        $resourceXML = new SimpleXMLElement(static::RELS_XML);
         $this->zipArchive->addFromString($this->getRelsName(), $resourceXML->asXml());
 
         foreach($this->content->xpath('p:sldLayoutIdLst/p:sldLayoutId') as $node){

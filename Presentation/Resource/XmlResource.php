@@ -3,6 +3,7 @@
 namespace Cpro\Presentation\Resource;
 
 use ZipArchive;
+use SimpleXMLElement;
 
 class XmlResource extends Resource
 {
@@ -43,7 +44,7 @@ class XmlResource extends Resource
      */
     public function setContent(string $content)
     {
-        $this->content = new \SimpleXMLElement($content);
+        $this->content = new SimpleXMLElement($content);
 
         return $this;
     }
@@ -94,7 +95,7 @@ class XmlResource extends Resource
                 return false;
             }
 
-            $resources = new \SimpleXMLElement($content);
+            $resources = new SimpleXMLElement($content);
 
             foreach ($resources as $resource) {
                 $this->resources[(string) $resource['Id']] = static::createFromNode(
@@ -162,7 +163,7 @@ class XmlResource extends Resource
             return;
         }
 
-        $resourceXML = new \SimpleXMLElement(static::RELS_XML);
+        $resourceXML = new SimpleXMLElement(static::RELS_XML);
         foreach ($this->resources as $id => $resource) {
 
             $relation = $resourceXML->addChild('Relationship');
