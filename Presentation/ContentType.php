@@ -18,6 +18,7 @@ class ContentType
         'application/vnd.openxmlformats-officedocument.presentationml.slide+xml' => Slide::class,
         'application/xml' => XmlResource::class,
         'application/image' => Image::class,
+        'image/vnd.ms-photo' => Image::class,
         '_' => Resource::class,
     ];
 
@@ -40,11 +41,15 @@ class ContentType
         $extension = pathinfo($filename)['extension'];
         if ($extension === 'xml') {
             preg_match('/([a-z]+)[0-9]*\.xml$/i', $filename, $fileType);
-            return 'application/vnd.openxmlformats-officedocument.presentationml.'.$fileType[1].'+xml';
+            return 'application/vnd.openxmlformats-officedocument.presentationml.' . $fileType[1] . '+xml';
         }
 
         if (in_array($extension, ['png', 'gif', 'jpg', 'jpeg'])) {
             return 'application/image';
+        }
+
+        if (in_array($extension, ['wdp', 'jxr', 'hdp'])) {
+            return 'image/vnd.ms-photo';
         }
 
         return '';

@@ -36,7 +36,15 @@ class PPTX
      */
     protected $tmpName;
 
+    /**
+     * @var array
+     */
     protected $cachedFilename = [];
+
+    /**
+     * @var array
+     */
+    protected $secureFileRecusivity = [];
 
     /**
      * Presentation constructor.
@@ -64,7 +72,7 @@ class PPTX
         for ($i = 0; $i < $this->source->numFiles; ++$i) {
             $filenameParts = pathinfo($this->source->statIndex($i)['name']);
             if (isset($filenameParts['dirname']) && isset($filenameParts['filename'])) {
-                $this->cachedFilename[] = $filenameParts['dirname'].'/'.$filenameParts['filename'];
+                $this->cachedFilename[] = $filenameParts['dirname'] . '/' . $filenameParts['filename'];
             }
         }
     }
@@ -110,7 +118,7 @@ class PPTX
                 22 => 'Can\'t remove file',
                 23 => 'Entry has been deleted',
             ];
-            throw new FileOpenException($errors[$res] ?? 'Cannot open PPTX file, error '.$res.'.');
+            throw new FileOpenException($errors[$res] ?? 'Cannot open PPTX file, error ' . $res . '.');
         }
 
         $this->contentTypes = $this->readXmlFile('[Content_Types].xml');
@@ -142,7 +150,7 @@ class PPTX
 
         $this->presentation = $this->readXmlFile('ppt/presentation.xml');
         foreach ($this->presentation->content->xpath('p:sldIdLst/p:sldId') as $slide) {
-            $id = $slide->xpath('@r:id')[0]['id'].'';
+            $id = $slide->xpath('@r:id')[0]['id'] . '';
             $this->slides[] = $this->presentation->getResource($id);
         }
 
@@ -170,11 +178,6 @@ class PPTX
     {
         $slide = clone $slide;
         $this->slides[] = $slide;
-
-        // Copy resources
-        foreach ($slide->getResources() as $resource) {
-            $this->copyResource($resource);
-        }
 
         // Copy slide
         $this->copyResource($slide);
@@ -226,13 +229,32 @@ class PPTX
      */
     public function copyResource(Resource $resource)
     {
-        $filename = $this->findAvailableName($resource->getPatternPath());
+        if ($resource->getPatternPath() === 'ppt/slideMasters/slideMaster{x}.xml') {
+            return $this;
+        }
+
+        if ($resource instanceof XmlResource) {
+            foreach ($resource->getResources() as $childResource) {
+                $this->copyResource($childResource);
+            }
+        }
+
+        $hashFile = sha1($resource->getContent());
+
+        if($resource instanceof XmlResource || $resource instanceof Image){
+            $filename = $this->findAvailableName($resource->getPatternPath());
+        } elseif (!isset($this->secureFileRecusivity[$hashFile])) {
+            $filename = $this->findAvailableName($resource->getPatternPath());
+            $this->secureFileRecusivity[$hashFile] = $filename;
+        } else {
+            $filename = $this->secureFileRecusivity[$hashFile];
+        }
 
         $resource->rename(basename($filename));
         $resource->setZipArchive($this->source);
-        $this->addContentType('/'.$resource->getAbsoluteTarget());
-
         $resource->save();
+
+        $this->addContentType('/' . $resource->getAbsoluteTarget());
 
         return $this;
     }
@@ -244,22 +266,32 @@ class PPTX
      */
     public function addContentType($filename)
     {
+        $collection = array_map('strval', $this->contentTypes->content->xpath('//@PartName'));
+
+        if(in_array($filename, $collection)){
+            return false;
+        }
+
         $contentTypeString = ContentType::getTypeFromFilename($filename);
 
-        if (!empty($contentTypeString)) {
-            $child = $this->contentTypes->content->addChild('Override');
-            $child['PartName'] = $filename;
-            $child['ContentType'] = $contentTypeString;
-
-            $this->contentTypes->save();
+        if (empty($contentTypeString)) {
+            return false;
         }
+
+        $child = $this->contentTypes->content->addChild('Override');
+        $child->addAttribute('PartName', $filename);
+        $child->addAttribute('ContentType', $contentTypeString);
+
+        $this->contentTypes->save();
+
+        return true;
     }
 
     /**
      * Find an available filename based on a pattern.
      *
      * @param     $pattern a string contains '{x}' as an index replaced by a incremental number
-     * @param int $start   beginning index default is 1
+     * @param int $start beginning index default is 1
      *
      * @return mixed
      */
@@ -269,8 +301,8 @@ class PPTX
             $filename = str_replace('{x}', $start, $pattern);
             $filenameParts = pathinfo($filename);
 
-            $filenameWithoutExtension = $filenameParts['dirname'].'/'.$filenameParts['filename'];
-            if(!in_array($filenameWithoutExtension, $this->cachedFilename)) {
+            $filenameWithoutExtension = $filenameParts['dirname'] . '/' . $filenameParts['filename'];
+            if (!in_array($filenameWithoutExtension, $this->cachedFilename)) {
                 $this->cachedFilename[] = $filenameWithoutExtension;
                 break;
             }

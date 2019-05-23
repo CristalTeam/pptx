@@ -3,9 +3,14 @@
 namespace Cpro\Presentation\Resource;
 
 use ZipArchive;
+use SimpleXMLElement;
 
 class XmlResource extends Resource
 {
+    const RELS_XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+
+    const ID_0 = 2147483647;
+
     /**
      * @var \SimpleXMLElement
      */
@@ -39,7 +44,7 @@ class XmlResource extends Resource
      */
     public function setContent(string $content)
     {
-        $this->content = new \SimpleXMLElement($content);
+        $this->content = new SimpleXMLElement($content);
 
         return $this;
     }
@@ -89,7 +94,9 @@ class XmlResource extends Resource
             if (!$content) {
                 return false;
             }
-            $resources = new \SimpleXMLElement($content);
+
+            $resources = new SimpleXMLElement($content);
+
             foreach ($resources as $resource) {
                 $this->resources[(string) $resource['Id']] = static::createFromNode(
                     $resource,
@@ -133,9 +140,12 @@ class XmlResource extends Resource
     {
         $this->mapResources();
 
-        $ids = array_map(function ($str) {
-            return str_replace('rId', '', $str);
-        }, array_keys($this->resources));
+        $ids = array_merge(
+            array_map(function ($str) {
+                return (int) str_replace('rId', '', $str);
+            }, array_keys($this->resources)),
+            [ 0 ]
+        );
 
         $this->resources['rId'.(max($ids) + 1)] = $resource;
 
@@ -153,7 +163,7 @@ class XmlResource extends Resource
             return;
         }
 
-        $resourceXML = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>');
+        $resourceXML = new SimpleXMLElement(static::RELS_XML);
         foreach ($this->resources as $id => $resource) {
 
             $relation = $resourceXML->addChild('Relationship');
