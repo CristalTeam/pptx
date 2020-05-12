@@ -56,7 +56,7 @@ class XmlResource extends Resource
      */
     public function getContent()
     {
-        return $this->content->asXml();
+        return $this->crlfConversion($this->content->asXml());
     }
 
     /**
@@ -172,6 +172,12 @@ class XmlResource extends Resource
             $relation['Target'] = $resource->getTarget();
         }
 
-        $this->zipArchive->addFromString($this->getRelsName(), $resourceXML->asXml());
+        $this->zipArchive->addFromString($this->getRelsName(), $this->crlfConversion($resourceXML->asXml()));
+    }
+
+    protected function crlfConversion($content){
+        $content = trim($content);
+        $content = str_replace(PHP_EOL, "\r\n", $content);
+        return $content;
     }
 }
