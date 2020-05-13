@@ -32,6 +32,7 @@ class Resource
      * @var ZipArchive
      */
     protected $zipArchive;
+
     /**
      * @var ZipArchive
      */
@@ -44,32 +45,29 @@ class Resource
 
     /**
      * Resource constructor.
-     *
-     * @param                 $target
-     * @param                 $type
-     * @param string          $relativeFile
-     * @param null|ZipArchive $zipArchive
      */
-    public function __construct($target, $type, $relativeFile = '', ?ZipArchive $zipArchive = null)
+    public function __construct(string $target, string $type, ZipArchive $zipArchive)
     {
         $this->initialTarget = $this->target = $target;
         $this->type = $type;
-        $this->relativeFile = $relativeFile;
         $this->zipArchive = $this->initalZipArchive = $zipArchive;
     }
 
     /**
      * Create an instance of Resource based on a XML rels node.
      *
-     * @param            $resourceNode
-     * @param            $relativeFile
-     * @param ZipArchive $zipArchive
      * @return static
      */
-    public static function createFromNode($resourceNode, $relativeFile, ZipArchive $zipArchive)
+    public static function createFromNode(string $target, string $type, ZipArchive $archive)
     {
-        $className = ContentType::getResourceClassFromFilename((string) $resourceNode['Target']);
-        return new $className((string) $resourceNode['Target'], (string) $resourceNode['Type'], $relativeFile, $zipArchive);
+        $target = static::resolveAbsolutePath($target);
+
+        $className = ContentType::getResourceClassFromType($type);
+        if($className === self::class){
+            $className = ContentType::getResourceClassFromFilename($target);
+        }
+
+        return new $className($target, $type, $archive);
     }
 
     /**
@@ -79,7 +77,7 @@ class Resource
      */
     public function getContent()
     {
-        return $this->customContent ?? $this->initalZipArchive->getFromName($this->getInitialAbsoluteTarget());
+        return $this->customContent ?? $this->initalZipArchive->getFromName($this->getInitialTarget());
     }
 
     /**
@@ -90,7 +88,7 @@ class Resource
     public function setContent(string $content)
     {
         $this->customContent = $content;
-        $this->zipArchive->addFromString($this->getAbsoluteTarget(), $content);
+        $this->zipArchive->addFromString($this->getTarget(), $content);
 
         return $this;
     }
@@ -119,28 +117,6 @@ class Resource
     }
 
     /**
-     * Get absolute target, calculate on current target.
-     *
-     * @return string
-     */
-    public function getAbsoluteTarget()
-    {
-        $path = dirname($this->relativeFile).'/'.ltrim($this->getTarget(), '/');
-        return static::resolveAbsolutePath($path);
-    }
-
-    /**
-     * Get initial absolute target, calculate on current target.
-     *
-     * @return string
-     */
-    public function getInitialAbsoluteTarget()
-    {
-        $path = dirname($this->relativeFile).'/'.ltrim($this->getInitialTarget(), '/');
-        return static::resolveAbsolutePath($path);
-    }
-
-    /**
      * Get pattern from filename.
      * Example, it returns 'ppt/slides/slide{x}.xml' for a filename like this ppt/slides/slide1.xml
      *
@@ -148,7 +124,7 @@ class Resource
      */
     public function getPatternPath()
     {
-        return preg_replace('#([^/])[0-9]+?\.(.*?)$#', '$1{x}.$2', $this->getAbsoluteTarget());
+        return preg_replace('#([^/])[0-9]+?\.(.*?)$#', '$1{x}.$2', $this->getTarget());
     }
 
     /**
@@ -234,7 +210,7 @@ class Resource
      */
     protected function performSave()
     {
-        $this->zipArchive->addFromString($this->getAbsoluteTarget(), $this->getContent());
+        $this->zipArchive->addFromString($this->getTarget(), $this->getContent());
     }
 
     /**
@@ -244,5 +220,42 @@ class Resource
     {
         $this->performSave();
         $this->syncInitials();
+    }
+
+    public function getKey()
+    {
+        return md5($this->initalZipArchive->filename.$this->getContent());
+    }
+
+    public function getRelativeTarget(string $relPath)
+    {
+        $basePath = $relPath;
+        $targetPath = $this->getTarget();
+        if ($basePath === $targetPath) {
+            return '';
+        }
+
+        $sourceDirs = explode('/', isset($basePath[0]) && strpos($basePath, '/') === 0 ? substr($basePath, 1) : $basePath);
+        $targetDirs = explode('/', isset($targetPath[0]) && strpos($targetPath, '/') === 0 ? substr($targetPath, 1) : $targetPath);
+        array_pop($sourceDirs);
+        $targetFile = array_pop($targetDirs);
+
+        foreach ($sourceDirs as $i => $dir) {
+            if (isset($targetDirs[$i]) && $dir === $targetDirs[$i]) {
+                unset($sourceDirs[$i], $targetDirs[$i]);
+            } else {
+                break;
+            }
+        }
+
+        $targetDirs[] = $targetFile;
+        $path = str_repeat('../', count($sourceDirs)) . implode('/', $targetDirs);
+
+        return '' === $path ||
+        strpos($path, '/') === 0 ||
+        (
+            false !== ($colonPos = strpos($path, ':')) &&
+            ($colonPos < ($slashPos = strpos($path, '/')) || false === $slashPos)
+        ) ? './' . $path : $path;
     }
 }

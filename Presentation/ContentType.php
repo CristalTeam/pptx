@@ -3,6 +3,8 @@
 namespace Cpro\Presentation;
 
 use Cpro\Presentation\Resource\Image;
+use Cpro\Presentation\Resource\NoteMaster;
+use Cpro\Presentation\Resource\Presentation;
 use Cpro\Presentation\Resource\Resource;
 use Cpro\Presentation\Resource\Slide;
 use Cpro\Presentation\Resource\SlideLayout;
@@ -14,8 +16,20 @@ class ContentType
      * Classes mapping
      */
     const CLASSES = [
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml' => Presentation::class,
         'application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml' => SlideLayout::class,
         'application/vnd.openxmlformats-officedocument.presentationml.slide+xml' => Slide::class,
+        'application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml' => NoteMaster::class,
+        'application/vnd.openxmlformats-officedocument.presentationml.handoutMaster+xml' => XmlResource::class,
+        'application/vnd.openxmlformats-officedocument.presentationml.tableStyles+xml' => XmlResource::class,
+        'application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml' => XmlResource::class,
+        'application/vnd.openxmlformats-officedocument.presentationml.theme+xml' => XmlResource::class,
+        'application/vnd.openxmlformats-officedocument.presentationml.viewProps+xml' => XmlResource::class,
+        'application/vnd.openxmlformats-officedocument.presentationml.presProps+xml' => XmlResource::class,
+        'application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml' => XmlResource::class,
+        'application/vnd.openxmlformats-officedocument.theme+xml' => XmlResource::class,
+        'application/vnd.openxmlformats-package.core-properties+xml' => XmlResource::class,
+        'application/vnd.openxmlformats-officedocument.extended-properties+xml' => XmlResource::class,
         'application/xml' => XmlResource::class,
         'application/image' => Image::class,
         'image/vnd.ms-photo' => Image::class,

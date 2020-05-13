@@ -23,17 +23,12 @@ class XmlResource extends Resource
 
     /**
      * XmlResource constructor.
-     *
-     * @param                 $target
-     * @param                 $type
-     * @param string          $relativeFile
-     * @param null|ZipArchive $zipArchive
      */
-    public function __construct($target, $type, $relativeFile = '', ?ZipArchive $zipArchive = null)
+    public function __construct(string $target, string $type, ZipArchive $zipArchive)
     {
-        parent::__construct($target, $type, $relativeFile, $zipArchive);
+        parent::__construct($target, $type, $zipArchive);
 
-        $this->setContent($this->initalZipArchive->getFromName($this->getInitialAbsoluteTarget()));
+        $this->setContent($this->initalZipArchive->getFromName($this->getInitialTarget()));
     }
 
     /**
@@ -66,7 +61,7 @@ class XmlResource extends Resource
      */
     protected function getInitialRelsName()
     {
-        $pathInfo = pathinfo($this->getInitialAbsoluteTarget());
+        $pathInfo = pathinfo($this->getInitialTarget());
         return $pathInfo['dirname'].'/_rels/'.$pathInfo['basename'].'.rels';
     }
 
@@ -77,7 +72,7 @@ class XmlResource extends Resource
      */
     protected function getRelsName()
     {
-        $pathInfo = pathinfo($this->getAbsoluteTarget());
+        $pathInfo = pathinfo($this->getTarget());
         return $pathInfo['dirname'].'/_rels/'.$pathInfo['basename'].'.rels';
     }
 
@@ -99,8 +94,8 @@ class XmlResource extends Resource
 
             foreach ($resources as $resource) {
                 $this->resources[(string) $resource['Id']] = static::createFromNode(
-                    $resource,
-                    $this->getInitialAbsoluteTarget(),
+                    dirname($this->target).'/'.$resource['Target'],
+                    $resource['Type'],
                     $this->initalZipArchive
                 );
             }
@@ -169,7 +164,7 @@ class XmlResource extends Resource
             $relation = $resourceXML->addChild('Relationship');
             $relation['Id'] = $id;
             $relation['Type'] = $resource->getType();
-            $relation['Target'] = $resource->getTarget();
+            $relation['Target'] = $resource->getRelativeTarget($this->getTarget());
         }
 
         $this->zipArchive->addFromString($this->getRelsName(), $this->crlfConversion($resourceXML->asXml()));

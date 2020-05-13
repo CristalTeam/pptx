@@ -10,7 +10,7 @@ class SlideLayout extends XmlResource
     protected function performSave()
     {
         if ($this->isDraft()) {
-            $slideMaster = new SlideMaster('ppt/slideMasters/slideMaster1.xml', '', 'ppt/', $this->zipArchive);
+            $slideMaster = new SlideMaster('ppt/slideMasters/slideMaster1.xml', '', $this->zipArchive);
             $slideMaster->addResource($this);
             $slideMaster->save();
         }

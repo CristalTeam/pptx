@@ -4,6 +4,7 @@ namespace Cpro\Presentation;
 
 use Cpro\Presentation\Exception\FileOpenException;
 use Cpro\Presentation\Exception\FileSaveException;
+use Cpro\Presentation\Resource\NoteMaster;
 use Cpro\Presentation\Resource\Resource;
 use Cpro\Presentation\Resource\Slide;
 use Cpro\Presentation\Resource\XmlResource;
@@ -44,7 +45,7 @@ class PPTX
     /**
      * @var array
      */
-    protected $secureFileRecusivity = [];
+    protected $resourcesAlreadyCopied = [];
 
     /**
      * Presentation constructor.
@@ -62,7 +63,7 @@ class PPTX
         }
 
         // Create tmp copy
-        $this->tmpName = tempnam(sys_get_temp_dir(), 'PPTX_');
+        $this->tmpName = tempnam(sys_get_temp_dir(), $filename.'PPTX_');
 
         copy($filename, $this->tmpName);
 
@@ -134,9 +135,9 @@ class PPTX
      *
      * @return XmlResource
      */
-    protected function readXmlFile($filename)
+    protected function readXmlFile(string $filename, string $type = 'application/xml')
     {
-        return new XmlResource($filename, '', 'ppt/', $this->source);
+        return Resource::createFromNode($filename, $type, $this->source);
     }
 
     /**
@@ -148,7 +149,10 @@ class PPTX
     {
         $this->slides = [];
 
-        $this->presentation = $this->readXmlFile('ppt/presentation.xml');
+        $this->presentation = $this->readXmlFile(
+            'ppt/presentation.xml',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml'
+        );
         foreach ($this->presentation->content->xpath('p:sldIdLst/p:sldId') as $slide) {
             $id = $slide->xpath('@r:id')[0]['id'] . '';
             $this->slides[] = $this->presentation->getResource($id);
@@ -182,16 +186,6 @@ class PPTX
         // Copy slide
         $this->copyResource($slide);
 
-        // Add references
-        $rId = $this->presentation->addResource($slide);
-
-        $currentSlides = $this->presentation->content->xpath('p:sldIdLst/p:sldId');
-
-        $ref = $this->presentation->content->xpath('p:sldIdLst')[0]->addChild('sldId');
-        $ref['id'] = intval(end($currentSlides)['id']) + 1;
-        $ref['r:id'] = $rId;
-
-        $this->presentation->save();
         $this->refreshSource();
 
         return $this;
@@ -222,16 +216,28 @@ class PPTX
     /**
      * Store resource into current presentation.
      *
-     * @param resource $resource
+     * @param Resource $resource
      *
      * @return $this
      * @throws \Exception
      */
     public function copyResource(Resource $resource)
     {
-        if ($resource->getPatternPath() === 'ppt/slideMasters/slideMaster{x}.xml') {
+        // Check if this file as already copied.
+
+        if(in_array($resource->getKey(), $this->resourcesAlreadyCopied, true)){
             return $this;
         }
+
+        $this->resourcesAlreadyCopied[] = $resource->getKey();
+
+        // Define new destination and declare the new file into the main contentType document.
+
+        $resource->setZipArchive($this->source);
+        $resource->rename(basename($this->findAvailableName($resource->getPatternPath())));
+        $this->addContentType('/' . $resource->getTarget());
+
+        // Copy its dependency file by calling again this method.
 
         if ($resource instanceof XmlResource) {
             foreach ($resource->getResources() as $childResource) {
@@ -239,22 +245,16 @@ class PPTX
             }
         }
 
-        $hashFile = sha1($resource->getContent());
+        // Finally, save the resource.
 
-        if($resource instanceof XmlResource || $resource instanceof Image){
-            $filename = $this->findAvailableName($resource->getPatternPath());
-        } elseif (!isset($this->secureFileRecusivity[$hashFile])) {
-            $filename = $this->findAvailableName($resource->getPatternPath());
-            $this->secureFileRecusivity[$hashFile] = $filename;
-        } else {
-            $filename = $this->secureFileRecusivity[$hashFile];
-        }
-
-        $resource->rename(basename($filename));
-        $resource->setZipArchive($this->source);
         $resource->save();
 
-        $this->addContentType('/' . $resource->getAbsoluteTarget());
+        // For some specific document make specific action.
+
+        if($resource instanceof NoteMaster || $resource instanceof Slide){
+            $this->presentation->addResource($resource);
+            $this->presentation->save();
+        }
 
         return $this;
     }
