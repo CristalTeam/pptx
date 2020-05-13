@@ -2,6 +2,8 @@
 
 namespace Cpro\Presentation\Exception;
 
-class FileSaveException extends \Exception
+use Exception;
+
+class FileSaveException extends Exception
 {
 }

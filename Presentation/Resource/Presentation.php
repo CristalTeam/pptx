@@ -4,7 +4,7 @@ namespace Cpro\Presentation\Resource;
 
 class Presentation extends XmlResource
 {
-    public function addResource(Resource $resource)
+    public function addResource(GenericResource $resource): string
     {
         $rId = parent::addResource($resource);
 
@@ -21,7 +21,7 @@ class Presentation extends XmlResource
             $currentSlides = $this->content->xpath('p:sldIdLst/p:sldId');
 
             $ref = $this->content->xpath('p:sldIdLst')[0]->addChild('sldId');
-            $ref['id'] = intval(end($currentSlides)['id']) + 1;
+            $ref['id'] = (int)end($currentSlides)['id'] + 1;
             $ref['r:id'] = $rId;
         }
 

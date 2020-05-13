@@ -2,6 +2,8 @@
 
 namespace Cpro\Presentation\Exception;
 
-class FileOpenException extends \Exception
+use Exception;
+
+class FileOpenException extends Exception
 {
 }

@@ -10,12 +10,12 @@ use SimpleXMLElement;
  */
 class SlideMaster extends XmlResource
 {
-    const NS_R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    protected const NS_R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 
     /**
      * {@inheritDoc}
      */
-    public function addResource(Resource $resource)
+    public function addResource(GenericResource $resource): string
     {
         $rId = parent::addResource($resource);
 
@@ -29,44 +29,44 @@ class SlideMaster extends XmlResource
     /**
      * {@inheritDoc}
      */
-    protected function performSave()
+    protected function performSave(): void
     {
         $this->optimizeIds();
-        return parent::performSave();
+        parent::performSave();
     }
 
     /**
      * @param $rId
      */
-    protected function addSlideLayout($rId)
+    protected function addSlideLayout($rId): void
     {
         $currentLayers = $this->content->xpath('p:sldLayoutIdLst/p:sldLayoutId');
 
         $sldLayoutId = $this->content->xpath('p:sldLayoutIdLst')[0]->addChild('p:sldLayoutId');
-        $sldLayoutId->addAttribute('id', intval(max(static::ID_0, end($currentLayers)['id'])) + 1);
+        $sldLayoutId->addAttribute('id', (int)max(static::ID_0, end($currentLayers)['id']) + 1);
         $sldLayoutId->addAttribute('r:id', $rId, static::NS_R);
     }
 
     /**
      * @return void
      */
-    protected function optimizeIds()
+    protected function optimizeIds(): void
     {
         $backupResources = $this->getResources();
 
-        // Get slides liste from XML.
+        // Get slides list from XML.
 
         $currentLayers = $this->content->xpath('p:sldLayoutIdLst/p:sldLayoutId');
         $ids = [];
         foreach ($currentLayers as $item) {
             $namespaces = $item->getNamespaces();
-            $ids[strval($item['id'])] = strval($item->attributes($namespaces['r'])['id']);
+            $ids[(string)$item['id']] = (string)$item->attributes($namespaces['r'])['id'];
         }
 
-        // Delete resources layoutes from _rels file.
+        // Delete resources layouts from _rels file.
 
-        $resources = array_filter($backupResources, function ($rId) use ($ids){
-            return !in_array($rId, $ids);
+        $resources = array_filter($backupResources, static function ($rId) use ($ids) {
+            return !in_array($rId, $ids, true);
         }, ARRAY_FILTER_USE_KEY);
 
         // Recreate resources list.
@@ -74,11 +74,11 @@ class SlideMaster extends XmlResource
         $this->clearResources();
         $rIdsOldArray = [];
 
-        foreach($resources as $rIdOld => $resource){
+        foreach ($resources as $rIdOld => $resource) {
             $rIdsOldArray[$rIdOld] = $this->addResource($resource);
         }
 
-        foreach($ids as $rIdOld){
+        foreach ($ids as $rIdOld) {
             $rIdsOldArray[$rIdOld] = $this->addResource($backupResources[$rIdOld]);
         }
     }
@@ -86,13 +86,13 @@ class SlideMaster extends XmlResource
     /**
      * @return void
      */
-    protected function clearResources()
+    protected function clearResources(): void
     {
         $this->resources = [];
         $resourceXML = new SimpleXMLElement(static::RELS_XML);
         $this->zipArchive->addFromString($this->getRelsName(), $resourceXML->asXml());
 
-        foreach($this->content->xpath('p:sldLayoutIdLst/p:sldLayoutId') as $node){
+        foreach ($this->content->xpath('p:sldLayoutIdLst/p:sldLayoutId') as $node) {
             unset($node[0]);
         }
     }

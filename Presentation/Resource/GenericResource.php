@@ -4,9 +4,10 @@ namespace Cpro\Presentation\Resource;
 
 use Cpro\Presentation\ContentType;
 use Cpro\Presentation\Exception\InvalidFileNameException;
+use Exception;
 use ZipArchive;
 
-class Resource
+class GenericResource
 {
     /**
      * @var string
@@ -24,11 +25,6 @@ class Resource
     protected $type;
 
     /**
-     * @var string
-     */
-    protected $relativeFile;
-
-    /**
      * @var ZipArchive
      */
     protected $zipArchive;
@@ -36,12 +32,12 @@ class Resource
     /**
      * @var ZipArchive
      */
-    protected $initalZipArchive;
+    protected $initialZipArchive;
 
     /**
      * @var null|string
      */
-    protected $customContent = null;
+    protected $customContent;
 
     /**
      * Resource constructor.
@@ -50,20 +46,18 @@ class Resource
     {
         $this->initialTarget = $this->target = $target;
         $this->type = $type;
-        $this->zipArchive = $this->initalZipArchive = $zipArchive;
+        $this->zipArchive = $this->initialZipArchive = $zipArchive;
     }
 
     /**
      * Create an instance of Resource based on a XML rels node.
-     *
-     * @return static
      */
-    public static function createFromNode(string $target, string $type, ZipArchive $archive)
+    public static function createFromNode(string $target, string $type, ZipArchive $archive): GenericResource
     {
         $target = static::resolveAbsolutePath($target);
 
         $className = ContentType::getResourceClassFromType($type);
-        if($className === self::class){
+        if ($className === self::class) {
             $className = ContentType::getResourceClassFromFilename($target);
         }
 
@@ -72,42 +66,30 @@ class Resource
 
     /**
      * Get current content file from initial zip archive.
-     *
-     * @return string
      */
-    public function getContent()
+    public function getContent(): string
     {
-        return $this->customContent ?? $this->initalZipArchive->getFromName($this->getInitialTarget());
+        return $this->customContent ?? $this->initialZipArchive->getFromName($this->getInitialTarget());
     }
 
-    /**
-     * @param string $content
-     *
-     * @return self
-     */
-    public function setContent(string $content)
+    public function setContent(string $content): void
     {
         $this->customContent = $content;
         $this->zipArchive->addFromString($this->getTarget(), $content);
-
-        return $this;
     }
 
     /**
      * Calculate an absolute path from a relative path.
-     *
-     * @param $path
-     * @return string
      */
-    public static function resolveAbsolutePath($path)
+    public static function resolveAbsolutePath(string $path): string
     {
         $parts = array_filter(explode('/', $path), 'strlen');
         $absolutes = [];
         foreach ($parts as $part) {
-            if ('.' == $part) {
+            if ('.' === $part) {
                 continue;
             }
-            if ('..' == $part) {
+            if ('..' === $part) {
                 array_pop($absolutes);
             } else {
                 $absolutes[] = $part;
@@ -129,48 +111,39 @@ class Resource
 
     /**
      * Get initial target file.
-     *
-     * @return string
      */
-    public function getInitialTarget()
+    public function getInitialTarget(): string
     {
         return $this->initialTarget;
     }
 
     /**
      * Get current target file.
-     *
-     * @return string
      */
-    public function getTarget()
+    public function getTarget(): string
     {
         return $this->target;
     }
 
     /**
      * Rename current Resource.
-     *
-     * @param $filename
-     * @return $this
-     * @throws \Exception
+     * @throws Exception
      */
-    public function rename($filename)
+    public function rename(string $filename): self
     {
         if (preg_match('#/#', $filename)) {
             throw new InvalidFileNameException('Filename can not be a a path.');
         }
 
-        $this->target = dirname($this->target).'/'.$filename;
+        $this->target = dirname($this->target) . '/' . $filename;
 
         return $this;
     }
 
     /**
      * Return current ContentType value.
-     *
-     * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }
@@ -181,7 +154,7 @@ class Resource
      * @param ZipArchive $zipArchive
      * @return ZipArchive
      */
-    public function setZipArchive(ZipArchive $zipArchive)
+    public function setZipArchive(ZipArchive $zipArchive): ZipArchive
     {
         return $this->zipArchive = $zipArchive;
     }
@@ -191,24 +164,24 @@ class Resource
      *
      * @return bool
      */
-    public function isDraft()
+    public function isDraft(): bool
     {
-        return $this->initialTarget !== $this->target || $this->initalZipArchive !== $this->zipArchive;
+        return $this->initialTarget !== $this->target || $this->initialZipArchive !== $this->zipArchive;
     }
 
     /**
      * Reset initials with current values.
      */
-    protected function syncInitials()
+    protected function syncInitials(): void
     {
-        $this->initalZipArchive = $this->zipArchive;
+        $this->initialZipArchive = $this->zipArchive;
         $this->initialTarget = $this->target;
     }
 
     /**
      *  Save current Resource.
      */
-    protected function performSave()
+    protected function performSave(): void
     {
         $this->zipArchive->addFromString($this->getTarget(), $this->getContent());
     }
@@ -216,18 +189,18 @@ class Resource
     /**
      * Save current Resource and syncInitials.
      */
-    public function save()
+    public function save(): void
     {
         $this->performSave();
         $this->syncInitials();
     }
 
-    public function getKey()
+    public function getKey(): string
     {
-        return md5($this->initalZipArchive->filename.$this->getContent());
+        return md5($this->initialZipArchive->filename . $this->getContent());
     }
 
-    public function getRelativeTarget(string $relPath)
+    public function getRelativeTarget(string $relPath): string
     {
         $basePath = $relPath;
         $targetPath = $this->getTarget();

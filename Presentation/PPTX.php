@@ -2,12 +2,15 @@
 
 namespace Cpro\Presentation;
 
+use Closure;
 use Cpro\Presentation\Exception\FileOpenException;
 use Cpro\Presentation\Exception\FileSaveException;
 use Cpro\Presentation\Resource\NoteMaster;
-use Cpro\Presentation\Resource\Resource;
+use Cpro\Presentation\Resource\GenericResource;
+use Cpro\Presentation\Resource\Presentation;
 use Cpro\Presentation\Resource\Slide;
 use Cpro\Presentation\Resource\XmlResource;
+use Exception;
 use ZipArchive;
 
 class PPTX
@@ -23,7 +26,7 @@ class PPTX
     protected $slides = [];
 
     /**
-     * @var XmlResource
+     * @var Presentation
      */
     protected $presentation;
 
@@ -48,49 +51,48 @@ class PPTX
     protected $resourcesAlreadyCopied = [];
 
     /**
+     * @var XmlResource
+     */
+    protected $contentTypes;
+
+    /**
      * Presentation constructor.
      *
-     * @param $filename
-     *
-     * @throws \Exception
+     * @throws Exception
      */
-    public function __construct($filename)
+    public function __construct(string $path)
     {
-        $this->filename = $filename;
+        $this->filename = $path;
 
-        if (!file_exists($filename)) {
+        if (!file_exists($path)) {
             throw new FileOpenException('Unable to open the source PPTX. Path does not exist.');
         }
 
         // Create tmp copy
-        $this->tmpName = tempnam(sys_get_temp_dir(), $filename.'PPTX_');
+        $this->tmpName = tempnam(sys_get_temp_dir(), 'PPTX_');
 
-        copy($filename, $this->tmpName);
+        copy($path, $this->tmpName);
 
         // Open copy
         $this->openFile($this->tmpName);
 
         for ($i = 0; $i < $this->source->numFiles; ++$i) {
             $filenameParts = pathinfo($this->source->statIndex($i)['name']);
-            if (isset($filenameParts['dirname']) && isset($filenameParts['filename'])) {
+            if (isset($filenameParts['dirname'], $filenameParts['filename'])) {
                 $this->cachedFilename[] = $filenameParts['dirname'] . '/' . $filenameParts['filename'];
             }
         }
     }
 
     /**
-     * Open PPTX file.
+     * Open a PPTX file.
      *
-     * @param $filename
-     *
-     * @return $this
-     *
-     * @throws \Exception
+     * @throws FileOpenException
      */
-    public function openFile(string $filename)
+    public function openFile(string $path): PPTX
     {
         $this->source = new ZipArchive();
-        $res = $this->source->open($filename);
+        $res = $this->source->open($path);
 
         if ($res !== true) {
             $errors = [
@@ -130,22 +132,16 @@ class PPTX
 
     /**
      * Create an XmlResource from a filename in the current presentation.
-     *
-     * @filename Path to the file
-     *
-     * @return XmlResource
      */
-    protected function readXmlFile(string $filename, string $type = 'application/xml')
+    protected function readXmlFile(string $path, string $type = 'application/xml'): GenericResource
     {
-        return Resource::createFromNode($filename, $type, $this->source);
+        return GenericResource::createFromNode($path, $type, $this->source);
     }
 
     /**
      * Read existing slides.
-     *
-     * @return static
      */
-    protected function loadSlides()
+    protected function loadSlides(): PPTX
     {
         $this->slides = [];
 
@@ -166,7 +162,7 @@ class PPTX
      *
      * @return Slide[]
      */
-    public function getSlides()
+    public function getSlides(): array
     {
         return $this->slides;
     }
@@ -174,11 +170,9 @@ class PPTX
     /**
      * Import a single slide object.
      *
-     * @param Slide $slide
-     *
-     * @return static
+     * @throws Exception
      */
-    public function addSlide(Slide $slide)
+    public function addSlide(Slide $slide): PPTX
     {
         $slide = clone $slide;
         $this->slides[] = $slide;
@@ -191,7 +185,11 @@ class PPTX
         return $this;
     }
 
-    protected function refreshSource()
+    /**
+     * @throws FileSaveException
+     * @throws FileOpenException
+     */
+    protected function refreshSource(): void
     {
         $this->close();
         $this->openFile($this->tmpName);
@@ -200,11 +198,9 @@ class PPTX
     /**
      * Import multiple slides object.
      *
-     * @param array $slides
-     *
-     * @return $this
+     * @throws Exception
      */
-    public function addSlides(array $slides)
+    public function addSlides(array $slides): PPTX
     {
         foreach ($slides as $slide) {
             $this->addSlide($slide);
@@ -216,12 +212,10 @@ class PPTX
     /**
      * Store resource into current presentation.
      *
-     * @param Resource $resource
-     *
      * @return $this
-     * @throws \Exception
+     * @throws Exception
      */
-    public function copyResource(Resource $resource)
+    public function copyResource(GenericResource $resource): PPTX
     {
         // Check if this file as already copied.
 
@@ -264,11 +258,11 @@ class PPTX
      *
      * @param $filename
      */
-    public function addContentType($filename)
+    public function addContentType($filename): bool
     {
         $collection = array_map('strval', $this->contentTypes->content->xpath('//@PartName'));
 
-        if(in_array($filename, $collection)){
+        if(in_array($filename, $collection, true)){
             return false;
         }
 
@@ -290,7 +284,7 @@ class PPTX
     /**
      * Find an available filename based on a pattern.
      *
-     * @param     $pattern a string contains '{x}' as an index replaced by a incremental number
+     * @param mixed $pattern A string contains '{x}' as an index replaced by a incremental number
      * @param int $start beginning index default is 1
      *
      * @return mixed
@@ -302,7 +296,7 @@ class PPTX
             $filenameParts = pathinfo($filename);
 
             $filenameWithoutExtension = $filenameParts['dirname'] . '/' . $filenameParts['filename'];
-            if (!in_array($filenameWithoutExtension, $this->cachedFilename)) {
+            if (!in_array($filenameWithoutExtension, $this->cachedFilename, true)) {
                 $this->cachedFilename[] = $filenameWithoutExtension;
                 break;
             }
@@ -316,11 +310,11 @@ class PPTX
     /**
      * Fill data to each slide.
      *
-     * @param array|\Closure $data
+     * @param array|Closure $data
      *
      * @return self
      */
-    public function template($data): self
+    public function template($data): PPTX
     {
         foreach ($this->getSlides() as $slide) {
             $slide->template($data);
@@ -329,7 +323,7 @@ class PPTX
         return $this;
     }
 
-    public function table(\Closure $data, \Closure $finder)
+    public function table(Closure $data, Closure $finder): PPTX
     {
         foreach ($this->getSlides() as $slide) {
             $slide->table($data, $finder);
@@ -341,11 +335,9 @@ class PPTX
     /**
      * Update the images in the slide.
      *
-     * @param $data mixed Closure or array which returns: key should match the descr attribute, value is the raw content of the image
-     *
-     * @return self
+     * @param mixed $data Closure or array which returns: key should match the descr attribute, value is the raw content of the image.
      */
-    public function images($data): self
+    public function images($data): PPTX
     {
         foreach ($this->getSlides() as $slide) {
             $slide->images($data);
@@ -360,9 +352,9 @@ class PPTX
      * @param $target
      *
      * @throws FileSaveException
-     * @throws \Exception
+     * @throws Exception
      */
-    public function saveAs($target)
+    public function saveAs($target): void
     {
         $this->close();
 
@@ -376,9 +368,9 @@ class PPTX
     /**
      * Overwrites the open file with the news.
      *
-     * @throws \Exception
+     * @throws Exception
      */
-    public function save()
+    public function save(): void
     {
         $this->saveAs($this->filename);
     }
@@ -395,10 +387,10 @@ class PPTX
     /**
      * @throws FileSaveException
      */
-    protected function close()
+    protected function close(): void
     {
         if (!@$this->source->close()) {
-            throw new FileSaveException('Unable to close the source PPTX');
+            throw new FileSaveException('Unable to close the source PPTX.');
         }
     }
 }

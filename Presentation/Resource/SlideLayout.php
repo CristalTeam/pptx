@@ -7,7 +7,7 @@ class SlideLayout extends XmlResource
     /**
      * {@inheritdoc}
      */
-    protected function performSave()
+    protected function performSave(): void
     {
         if ($this->isDraft()) {
             $slideMaster = new SlideMaster('ppt/slideMasters/slideMaster1.xml', '', $this->zipArchive);
@@ -15,6 +15,6 @@ class SlideLayout extends XmlResource
             $slideMaster->save();
         }
 
-        return parent::performSave();
+        parent::performSave();
     }
 }

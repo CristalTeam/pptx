@@ -3,18 +3,19 @@
 namespace Cpro\Presentation\Resource;
 
 use Closure;
+use Generator;
 
 class Slide extends XmlResource
 {
     /**
      * @var string
      */
-    const TEMPLATE_SEPARATOR = '.';
+    protected const TEMPLATE_SEPARATOR = '.';
 
     /**
      * @var string
      */
-    const TABLE_ROW_TEMPLATE_NAME = 'replaceByNewRow';
+    protected const TABLE_ROW_TEMPLATE_NAME = 'replaceByNewRow';
 
     /**
      * @param        $key
@@ -23,7 +24,7 @@ class Slide extends XmlResource
      *
      * @return string
      */
-    protected function findDataRecursively($key, $data, $default = '')
+    protected function findDataRecursively($key, $data, $default = ''): string
     {
         foreach (explode(self::TEMPLATE_SEPARATOR, $key) as $segment) {
             if (isset($data[$segment])) {
@@ -39,9 +40,9 @@ class Slide extends XmlResource
     /**
      * Fill data to the slide.
      *
-     * @param array|\Closure $data
+     * @param array|Closure $data
      */
-    public function template($data)
+    public function template($data): void
     {
         if (!$data instanceof Closure) {
             $data = function ($matches) use ($data) {
@@ -56,41 +57,30 @@ class Slide extends XmlResource
         $this->save();
     }
 
-    /**
-     * @param string  $source   The source
-     * @param Closure $callback The callback
-     *
-     * @return string
-     */
     protected function replaceNeedle(string $source, Closure $callback): string
     {
-        $sanitizer = function ($matches) use ($callback) {
+        $sanitizer = static function ($matches) use ($callback) {
             return htmlspecialchars($callback($matches));
         };
 
-        $r = preg_replace_callback(
+        return preg_replace_callback(
             '/(\{\{)((\<(.*?)\>)+)?(?P<needle>.*?)((\<(.*?)\>)+)?(\}\})/mi',
             $sanitizer,
             $source
         );
-
-        return $r;
     }
 
-    /**
-     * @param Closure $data
-     */
-    public function table(Closure $data, Closure $finder = null)
+    public function table(Closure $data, Closure $finder = null): void
     {
         if (!$finder) {
-            $finder = function (string $needle, array $row) : string {
+            $finder = function (string $needle, array $row): string {
                 return $this->findDataRecursively($needle, $row);
             };
         }
 
         $tables = $this->content->xpath('//a:tbl/../../../p:nvGraphicFramePr/p:cNvPr');
         foreach ($tables as $table) {
-            $tableId = (string) $table->attributes()['name'];
+            $tableId = (string)$table->attributes()['name'];
             $tableRow = $this->content->xpath("//p:cNvPr[@name='$tableId']/../..//a:tr")[1];
             $table = $tableRow->xpath('..')[0];
             $rows = $data($tableId);
@@ -99,17 +89,18 @@ class Slide extends XmlResource
             }
 
             foreach ($rows as $index => $row) {
-                $table->addChild(self::TABLE_ROW_TEMPLATE_NAME.$index);
+                $table->addChild(self::TABLE_ROW_TEMPLATE_NAME . $index);
             }
 
             $xml = preg_replace_callback(
-                '/<([^>]+:?'.self::TABLE_ROW_TEMPLATE_NAME.'([\d])+\/>?)/',
+                '/<([^>]+:?' . self::TABLE_ROW_TEMPLATE_NAME . '([\d])+\/>?)/',
                 function ($matches) use ($tableRow, $rows, $finder) {
-                    [,,$rowId] = $matches;
+                    [, , $rowId] = $matches;
 
-                    return $this->replaceNeedle($tableRow->asXML(), function ($matches) use ($rows, $rowId, $finder) {
-                        return $finder($matches['needle'], $rows[$rowId]);
-                    });
+                    return $this->replaceNeedle($tableRow->asXML(),
+                        static function ($matches) use ($rows, $rowId, $finder) {
+                            return $finder($matches['needle'], $rows[$rowId]);
+                        });
                 },
                 $this->content->asXML()
             );
@@ -125,10 +116,10 @@ class Slide extends XmlResource
      *
      * @param array|Closure $data
      */
-    public function images($data)
+    public function images($data): void
     {
         if (!$data instanceof Closure) {
-            $data = function ($key) use ($data) {
+            $data = static function ($key) use ($data) {
                 return $data[$key] ?? null;
             };
         }
@@ -142,18 +133,16 @@ class Slide extends XmlResource
 
     /**
      * Gets the image identifiers capable to being templated.
-     *
-     * @return array
      */
-    public function getTemplateImages()
+    public function getTemplateImages(): Generator
     {
         $nodes = $this->content->xpath('//p:pic');
 
         foreach ($nodes as $node) {
-            $id = (string) $node->xpath('p:blipFill/a:blip/@r:embed')[0]->embed;
+            $id = (string)$node->xpath('p:blipFill/a:blip/@r:embed')[0]->embed;
             $key = $node->xpath('p:nvPicPr/p:cNvPr/@descr');
             if ($key && isset($key[0]) && !empty($key[0]->descr)) {
-                yield $id => (string) $key[0]->descr;
+                yield $id => (string)$key[0]->descr;
             }
         }
     }

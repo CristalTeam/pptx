@@ -2,6 +2,8 @@
 
 namespace Cpro\Presentation\Exception;
 
-class InvalidFileNameException extends \Exception
+use Exception;
+
+class InvalidFileNameException extends Exception
 {
 }

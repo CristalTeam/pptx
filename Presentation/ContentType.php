@@ -5,7 +5,7 @@ namespace Cpro\Presentation;
 use Cpro\Presentation\Resource\Image;
 use Cpro\Presentation\Resource\NoteMaster;
 use Cpro\Presentation\Resource\Presentation;
-use Cpro\Presentation\Resource\Resource;
+use Cpro\Presentation\Resource\GenericResource;
 use Cpro\Presentation\Resource\Slide;
 use Cpro\Presentation\Resource\SlideLayout;
 use Cpro\Presentation\Resource\XmlResource;
@@ -13,9 +13,9 @@ use Cpro\Presentation\Resource\XmlResource;
 class ContentType
 {
     /**
-     * Classes mapping
+     * Classes mapping.
      */
-    const CLASSES = [
+    public const CLASSES = [
         'application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml' => Presentation::class,
         'application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml' => SlideLayout::class,
         'application/vnd.openxmlformats-officedocument.presentationml.slide+xml' => Slide::class,
@@ -33,24 +33,17 @@ class ContentType
         'application/xml' => XmlResource::class,
         'application/image' => Image::class,
         'image/vnd.ms-photo' => Image::class,
-        '_' => Resource::class,
+        '_' => GenericResource::class,
     ];
 
-    /**
-     * ContentType constructor.
-     */
     private function __construct()
     {
-        //
     }
 
     /**
      * Get the content type of the file based on its filename.
-     *
-     * @param $filename
-     * @return string
      */
-    public static function getTypeFromFilename($filename)
+    public static function getTypeFromFilename(string $filename): string
     {
         $extension = pathinfo($filename)['extension'];
         if ($extension === 'xml') {
@@ -71,26 +64,16 @@ class ContentType
 
     /**
      * Get resource class from its contentType.
-     *
-     * @param $contentType
-     * @return mixed
      */
-    public static function getResourceClassFromType($contentType)
+    public static function getResourceClassFromType(string $contentType): string
     {
-        if (isset(static::CLASSES[$contentType])) {
-            return static::CLASSES[$contentType];
-        }
-
-        return static::CLASSES['_'];
+        return static::CLASSES[$contentType] ?? static::CLASSES['_'];
     }
 
     /**
      * Get resource class from its filename.
-     *
-     * @param $filename
-     * @return mixed
      */
-    public static function getResourceClassFromFilename($filename)
+    public static function getResourceClassFromFilename(string $filename): string
     {
         $contentType = static::getTypeFromFilename($filename);
 

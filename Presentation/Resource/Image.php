@@ -2,7 +2,6 @@
 
 namespace Cpro\Presentation\Resource;
 
-class Image extends Resource
+class Image extends GenericResource
 {
-    //
 }
