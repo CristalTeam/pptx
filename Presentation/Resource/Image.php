@@ -1,8 +1,7 @@
 <?php
 
-namespace Cpro\Presentation\Resource;
+namespace Cristal\Presentation\Resource;
 
-class Image extends Resource
+class Image extends GenericResource
 {
-    //
 }

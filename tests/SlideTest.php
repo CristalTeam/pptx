@@ -1,8 +1,8 @@
 <?php
 
-namespace Cpro\Presentation\Tests;
+namespace Cristal\Presentation\Tests;
 
-use Cpro\Presentation\PPTX;
+use Cristal\Presentation\PPTX;
 
 class SlideTest extends TestCase
 {

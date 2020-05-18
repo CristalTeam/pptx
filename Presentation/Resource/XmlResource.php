@@ -1,107 +1,106 @@
 <?php
 
-namespace Cpro\Presentation\Resource;
+namespace Cristal\Presentation\Resource;
 
-use ZipArchive;
+use Cristal\Presentation\PPTX;
 use SimpleXMLElement;
 
-class XmlResource extends Resource
+class XmlResource extends GenericResource
 {
-    const RELS_XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+    protected const RELS_XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
 
-    const ID_0 = 2147483647;
+    protected const ID_0 = 2147483647;
+
+    protected static $lastId = self::ID_0;
 
     /**
-     * @var \SimpleXMLElement
+     * @var SimpleXMLElement
      */
     public $content;
 
     /**
-     * @var Resource[]
+     * @var GenericResource[]
      */
     public $resources = [];
 
     /**
-     * XmlResource constructor.
-     *
-     * @param                 $target
-     * @param                 $type
-     * @param string          $relativeFile
-     * @param null|ZipArchive $zipArchive
+     * @var mixed
      */
-    public function __construct($target, $type, $relativeFile = '', ?ZipArchive $zipArchive = null)
-    {
-        parent::__construct($target, $type, $relativeFile, $zipArchive);
+    protected $originalContent;
 
-        $this->setContent($this->initalZipArchive->getFromName($this->getInitialAbsoluteTarget()));
+    /**
+     * @var array
+     */
+    protected $namespaces;
+
+    /**
+     * XmlResource constructor.
+     */
+    public function __construct(string $target, string $relType, string $contentType, PPTX $document)
+    {
+        parent::__construct($target, $relType, $contentType, $document);
+
+        $originalContent = $this->document->getArchive()->getFromName($this->getInitialTarget());
+        $this->setContent($originalContent);
+        $this->originalContent = $originalContent;
+        $this->namespaces = $this->content->getNamespaces(true);
+        $this->setHighestId();
     }
 
     /**
      * Reset an XML content from a string.
      *
      * @param string $content Must be a valid XML.
-     * @return $this
      */
-    public function setContent(string $content)
+    public function setContent(string $content): void
     {
         $this->content = new SimpleXMLElement($content);
-
-        return $this;
     }
 
     /**
      * Returns a string content from the XML object.
-     *
-     * @return mixed|string
      */
-    public function getContent()
+    public function getContent(): string
     {
         return $this->content->asXml();
     }
 
     /**
      * Return initial rels path of the XML.
-     *
-     * @return string
      */
-    protected function getInitialRelsName()
+    protected function getInitialRelsName(): string
     {
-        $pathInfo = pathinfo($this->getInitialAbsoluteTarget());
-        return $pathInfo['dirname'].'/_rels/'.$pathInfo['basename'].'.rels';
+        $pathInfo = pathinfo($this->getInitialTarget());
+        return $pathInfo['dirname'] . '/_rels/' . $pathInfo['basename'] . '.rels';
     }
 
     /**
      * Return rels path of the XML.
-     *
-     * @return string
      */
-    protected function getRelsName()
+    protected function getRelsName(): string
     {
-        $pathInfo = pathinfo($this->getAbsoluteTarget());
-        return $pathInfo['dirname'].'/_rels/'.$pathInfo['basename'].'.rels';
+        $pathInfo = pathinfo($this->getTarget());
+        return $pathInfo['dirname'] . '/_rels/' . $pathInfo['basename'] . '.rels';
     }
 
     /**
      * Explore XML to find its resources.
-     *
-     * @return bool
      */
-    protected function mapResources()
+    protected function mapResources(): void
     {
         if (!count($this->resources)) {
-            $content = $this->initalZipArchive->getFromName($this->getInitialRelsName());
+            $content = $this->initialDocument->getArchive()->getFromName($this->getInitialRelsName());
 
             if (!$content) {
-                return false;
+                return;
             }
 
             $resources = new SimpleXMLElement($content);
 
             foreach ($resources as $resource) {
-                $this->resources[(string) $resource['Id']] = static::createFromNode(
-                    $resource,
-                    $this->getInitialAbsoluteTarget(),
-                    $this->initalZipArchive
+                $this->resources[(string)$resource['Id']] = $this->initialDocument->getContentType()->getResource(
+                    self::resolveAbsolutePath(dirname($this->target) . '/' . $resource['Target']),
+                    $resource['Type']
                 );
             }
         }
@@ -110,22 +109,18 @@ class XmlResource extends Resource
     /**
      * Get all resource links of the XML.
      *
-     * @return Resource[]
+     * @return GenericResource[]
      */
-    public function getResources()
+    public function getResources(): array
     {
         $this->mapResources();
-
         return $this->resources;
     }
 
     /**
      * Get a specific resource from its identifier.
-     *
-     * @param $id
-     * @return null|Resource
      */
-    public function getResource($id)
+    public function getResource(string $id): ?GenericResource
     {
         return $this->getResources()[$id] ?? null;
     }
@@ -133,30 +128,30 @@ class XmlResource extends Resource
     /**
      * Add a resource to XML and generate an identifier.
      *
-     * @param Resource $resource
      * @return string Return the identifier.
      */
-    public function addResource(Resource $resource)
+    public function addResource(GenericResource $resource): ?string
     {
         $this->mapResources();
 
         $ids = array_merge(
-            array_map(function ($str) {
-                return (int) str_replace('rId', '', $str);
+            array_map(static function ($str) {
+                return (int)str_replace('rId', '', $str);
             }, array_keys($this->resources)),
-            [ 0 ]
+            [0]
         );
 
-        $this->resources['rId'.(max($ids) + 1)] = $resource;
+        $this->resources['rId' . (max($ids) + 1)] = $resource;
 
-        return 'rId'.(max($ids) + 1);
+        return 'rId' . (max($ids) + 1);
     }
 
     /**
      * Save XML and resource rels file.
      */
-    protected function performSave()
+    protected function performSave(): void
     {
+        $this->resetIds();
         parent::performSave();
 
         if (!count($this->getResources())) {
@@ -164,14 +159,57 @@ class XmlResource extends Resource
         }
 
         $resourceXML = new SimpleXMLElement(static::RELS_XML);
-        foreach ($this->resources as $id => $resource) {
 
+        foreach ($this->resources as $id => $resource) {
             $relation = $resourceXML->addChild('Relationship');
-            $relation['Id'] = $id;
-            $relation['Type'] = $resource->getType();
-            $relation['Target'] = $resource->getTarget();
+            $relation->addAttribute('Id', $id);
+            $relation->addAttribute('Type', $resource->getRelType());
+            $relation->addAttribute('Target', $resource->getRelativeTarget($this->getTarget()));
         }
 
-        $this->zipArchive->addFromString($this->getRelsName(), $resourceXML->asXml());
+        $this->document->getArchive()->addFromString($this->getRelsName(), $resourceXML->asXml());
+    }
+
+    public function isDraft(): bool
+    {
+        return $this->originalContent !== $this->content->asXML() || parent::isDraft();
+    }
+
+    protected function setHighestId(): void
+    {
+        if (!isset($this->namespaces['r'])) {
+            return;
+        }
+
+        foreach ($this->content->xpath('//@id/..') as $node) {
+            $id = (int)$node['id'];
+
+            if (self::$lastId < $id && $node->attributes($this->namespaces['r'])->id) {
+                self::$lastId = $id;
+            }
+        }
+    }
+
+    /**
+     * Resetting IDs, prevents errors when you a add the same SlideMaster several times.
+     */
+    protected function resetIds(): void
+    {
+        if (!isset($this->namespaces['r'])) {
+            return;
+        }
+
+        foreach ($this->content->xpath('//@id/..') as $node) {
+            $id = (int)$node['id'];
+
+            if ($id > self::ID_0 && $node->attributes($this->namespaces['r'])->id) {
+                $node['id'] = self::getUniqueID();
+            }
+        }
+    }
+
+    public static function getUniqueID(): int
+    {
+        return ++self::$lastId;
     }
 }

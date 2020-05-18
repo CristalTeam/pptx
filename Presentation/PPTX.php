@@ -1,12 +1,16 @@
 <?php
 
-namespace Cpro\Presentation;
+namespace Cristal\Presentation;
 
-use Cpro\Presentation\Exception\FileOpenException;
-use Cpro\Presentation\Exception\FileSaveException;
-use Cpro\Presentation\Resource\Resource;
-use Cpro\Presentation\Resource\Slide;
-use Cpro\Presentation\Resource\XmlResource;
+use Closure;
+use Cristal\Presentation\Exception\FileOpenException;
+use Cristal\Presentation\Exception\FileSaveException;
+use Cristal\Presentation\Resource\ContentType;
+use Cristal\Presentation\Resource\GenericResource;
+use Cristal\Presentation\Resource\Presentation;
+use Cristal\Presentation\Resource\Slide;
+use Cristal\Presentation\Resource\XmlResource;
+use Exception;
 use ZipArchive;
 
 class PPTX
@@ -14,7 +18,7 @@ class PPTX
     /**
      * @var ZipArchive
      */
-    protected $source;
+    protected $archive;
 
     /**
      * @var Slide[]
@@ -22,7 +26,7 @@ class PPTX
     protected $slides = [];
 
     /**
-     * @var XmlResource
+     * @var Presentation
      */
     protected $presentation;
 
@@ -37,59 +41,41 @@ class PPTX
     protected $tmpName;
 
     /**
-     * @var array
+     * @var ContentType
      */
-    protected $cachedFilename = [];
-
-    /**
-     * @var array
-     */
-    protected $secureFileRecusivity = [];
+    protected $contentType;
 
     /**
      * Presentation constructor.
      *
-     * @param $filename
-     *
-     * @throws \Exception
+     * @throws Exception
      */
-    public function __construct($filename)
+    public function __construct(string $path)
     {
-        $this->filename = $filename;
+        $this->filename = $path;
 
-        if (!file_exists($filename)) {
+        if (!file_exists($path)) {
             throw new FileOpenException('Unable to open the source PPTX. Path does not exist.');
         }
 
         // Create tmp copy
         $this->tmpName = tempnam(sys_get_temp_dir(), 'PPTX_');
 
-        copy($filename, $this->tmpName);
+        copy($path, $this->tmpName);
 
         // Open copy
         $this->openFile($this->tmpName);
-
-        for ($i = 0; $i < $this->source->numFiles; ++$i) {
-            $filenameParts = pathinfo($this->source->statIndex($i)['name']);
-            if (isset($filenameParts['dirname']) && isset($filenameParts['filename'])) {
-                $this->cachedFilename[] = $filenameParts['dirname'] . '/' . $filenameParts['filename'];
-            }
-        }
     }
 
     /**
-     * Open PPTX file.
+     * Open a PPTX file.
      *
-     * @param $filename
-     *
-     * @return $this
-     *
-     * @throws \Exception
+     * @throws FileOpenException
      */
-    public function openFile(string $filename)
+    public function openFile(string $path): PPTX
     {
-        $this->source = new ZipArchive();
-        $res = $this->source->open($filename);
+        $this->archive = new ZipArchive();
+        $res = $this->archive->open($path);
 
         if ($res !== true) {
             $errors = [
@@ -121,34 +107,21 @@ class PPTX
             throw new FileOpenException($errors[$res] ?? 'Cannot open PPTX file, error ' . $res . '.');
         }
 
-        $this->contentTypes = $this->readXmlFile('[Content_Types].xml');
+        $this->contentType = new ContentType($this);
+        $this->presentation = $this->contentType->getResource('ppt/presentation.xml');
+
         $this->loadSlides();
 
         return $this;
     }
 
     /**
-     * Create an XmlResource from a filename in the current presentation.
-     *
-     * @filename Path to the file
-     *
-     * @return XmlResource
-     */
-    protected function readXmlFile($filename)
-    {
-        return new XmlResource($filename, '', 'ppt/', $this->source);
-    }
-
-    /**
      * Read existing slides.
-     *
-     * @return static
      */
-    protected function loadSlides()
+    protected function loadSlides(): PPTX
     {
         $this->slides = [];
 
-        $this->presentation = $this->readXmlFile('ppt/presentation.xml');
         foreach ($this->presentation->content->xpath('p:sldIdLst/p:sldId') as $slide) {
             $id = $slide->xpath('@r:id')[0]['id'] . '';
             $this->slides[] = $this->presentation->getResource($id);
@@ -162,42 +135,87 @@ class PPTX
      *
      * @return Slide[]
      */
-    public function getSlides()
+    public function getSlides(): array
     {
         return $this->slides;
     }
 
+
     /**
      * Import a single slide object.
      *
-     * @param Slide $slide
-     *
-     * @return static
+     * @throws Exception
      */
-    public function addSlide(Slide $slide)
+    public function addSlide(Slide $slide): PPTX
     {
-        $slide = clone $slide;
-        $this->slides[] = $slide;
+        return $this->addResource($slide);
+    }
 
-        // Copy slide
-        $this->copyResource($slide);
+    /**
+     * Add a resource and its dependency inside this document.
+     */
+    public function addResource(GenericResource $res): PPTX
+    {
+        $tree = $this->getResourceTree($res);
 
-        // Add references
-        $rId = $this->presentation->addResource($slide);
+        /** @var GenericResource[] $clonedResources */
+        $clonedResources = [];
 
-        $currentSlides = $this->presentation->content->xpath('p:sldIdLst/p:sldId');
+        // Clone, rename, and set new destination...
 
-        $ref = $this->presentation->content->xpath('p:sldIdLst')[0]->addChild('sldId');
-        $ref['id'] = intval(end($currentSlides)['id']) + 1;
-        $ref['r:id'] = $rId;
+        foreach($tree as $originalResource){
 
+            // Check if resource already exists in the document.
+            $existingResource = $this->getContentType()->lookForSimilarFile($originalResource);
+
+            if(null === $existingResource || $originalResource instanceof XmlResource) {
+                $resource = clone $originalResource;
+                $resource->setDocument($this);
+                $resource->rename(basename($this->getContentType()->findAvailableName($resource->getPatternPath())));
+                $this->contentType->addResource($resource);
+
+                $clonedResources[$originalResource->getTarget()] = $resource;
+            } else {
+                $clonedResources[$originalResource->getTarget()] = $existingResource;
+            }
+        }
+
+        // After the resource is renamed, replace existing "rIds" by the corresponding new resource...
+
+        foreach($clonedResources as $resource){
+            if($resource instanceof XmlResource){
+                foreach($resource->resources as $rId => $subResource){
+                    $resource->resources[$rId] = $clonedResources[$subResource->getTarget()];
+                }
+            }
+
+            // Also, notify the Presentation that have a new interesting object...
+            $this->presentation->addResource($resource);
+
+            if($resource instanceof Slide){
+                $this->slides[] = $res;
+            }
+        }
+
+        // Finally, save all new resources.
+        foreach($clonedResources as $resource){
+            $resource->save();
+        }
+
+        // And the presentation.
         $this->presentation->save();
+        $this->contentType->save();
+
         $this->refreshSource();
 
         return $this;
     }
 
-    protected function refreshSource()
+    /**
+     * @throws FileSaveException
+     * @throws FileOpenException
+     */
+    public function refreshSource(): void
     {
         $this->close();
         $this->openFile($this->tmpName);
@@ -206,11 +224,9 @@ class PPTX
     /**
      * Import multiple slides object.
      *
-     * @param array $slides
-     *
-     * @return $this
+     * @throws Exception
      */
-    public function addSlides(array $slides)
+    public function addSlides(array $slides): PPTX
     {
         foreach ($slides as $slide) {
             $this->addSlide($slide);
@@ -220,132 +236,59 @@ class PPTX
     }
 
     /**
-     * Store resource into current presentation.
-     *
-     * @param resource $resource
-     *
-     * @return $this
-     * @throws \Exception
+     * @return GenericResource[]
      */
-    public function copyResource(Resource $resource)
+    public function getResourceTree(GenericResource $resource, array &$resourceList = []): array
     {
-        if ($resource->getPatternPath() === 'ppt/slideMasters/slideMaster{x}.xml') {
-            return $this;
+        if(in_array($resource, $resourceList, true)){
+            return $resourceList;
         }
+
+        $resourceList[] = $resource;
 
         if ($resource instanceof XmlResource) {
-            foreach ($resource->getResources() as $childResource) {
-                $this->copyResource($childResource);
+            foreach($resource->getResources() as $subResource){
+                $this->getResourceTree($subResource, $resourceList);
             }
         }
 
-        $hashFile = sha1($resource->getContent());
-
-        if($resource instanceof XmlResource || $resource instanceof Image){
-            $filename = $this->findAvailableName($resource->getPatternPath());
-        } elseif (!isset($this->secureFileRecusivity[$hashFile])) {
-            $filename = $this->findAvailableName($resource->getPatternPath());
-            $this->secureFileRecusivity[$hashFile] = $filename;
-        } else {
-            $filename = $this->secureFileRecusivity[$hashFile];
-        }
-
-        $resource->rename(basename($filename));
-        $resource->setZipArchive($this->source);
-        $resource->save();
-
-        $this->addContentType('/' . $resource->getAbsoluteTarget());
-
-        return $this;
-    }
-
-    /**
-     * Add content type to the presentation from a filename.
-     *
-     * @param $filename
-     */
-    public function addContentType($filename)
-    {
-        $collection = array_map('strval', $this->contentTypes->content->xpath('//@PartName'));
-
-        if(in_array($filename, $collection)){
-            return false;
-        }
-
-        $contentTypeString = ContentType::getTypeFromFilename($filename);
-
-        if (empty($contentTypeString)) {
-            return false;
-        }
-
-        $child = $this->contentTypes->content->addChild('Override');
-        $child->addAttribute('PartName', $filename);
-        $child->addAttribute('ContentType', $contentTypeString);
-
-        $this->contentTypes->save();
-
-        return true;
-    }
-
-    /**
-     * Find an available filename based on a pattern.
-     *
-     * @param     $pattern a string contains '{x}' as an index replaced by a incremental number
-     * @param int $start beginning index default is 1
-     *
-     * @return mixed
-     */
-    protected function findAvailableName($pattern, $start = 1)
-    {
-        do {
-            $filename = str_replace('{x}', $start, $pattern);
-            $filenameParts = pathinfo($filename);
-
-            $filenameWithoutExtension = $filenameParts['dirname'] . '/' . $filenameParts['filename'];
-            if (!in_array($filenameWithoutExtension, $this->cachedFilename)) {
-                $this->cachedFilename[] = $filenameWithoutExtension;
-                break;
-            }
-
-            ++$start;
-        } while (true);
-
-        return $filename;
+        return $resourceList;
     }
 
     /**
      * Fill data to each slide.
      *
-     * @param array|\Closure $data
+     * @param array|Closure $data
      *
-     * @return self
+     * @throws FileOpenException
+     * @throws FileSaveException
      */
-    public function template($data): self
+    public function template($data): PPTX
     {
         foreach ($this->getSlides() as $slide) {
             $slide->template($data);
         }
 
+        $this->refreshSource();
         return $this;
     }
 
-    public function table(\Closure $data, \Closure $finder)
+    public function table(Closure $data, Closure $finder): PPTX
     {
         foreach ($this->getSlides() as $slide) {
             $slide->table($data, $finder);
         }
 
+        $this->refreshSource();
         return $this;
     }
 
     /**
      * Update the images in the slide.
      *
-     * @param $data mixed Closure or array which returns: key should match the descr attribute, value is the raw content of the image
-     *
-     * @return self
+     * @param mixed $data Closure or array which returns: key should match the descr attribute, value is the raw content of the image.
      */
-    public function images($data): self
+    public function images($data): PPTX
     {
         foreach ($this->getSlides() as $slide) {
             $slide->images($data);
@@ -360,9 +303,9 @@ class PPTX
      * @param $target
      *
      * @throws FileSaveException
-     * @throws \Exception
+     * @throws Exception
      */
-    public function saveAs($target)
+    public function saveAs($target): void
     {
         $this->close();
 
@@ -376,9 +319,9 @@ class PPTX
     /**
      * Overwrites the open file with the news.
      *
-     * @throws \Exception
+     * @throws Exception
      */
-    public function save()
+    public function save(): void
     {
         $this->saveAs($this->filename);
     }
@@ -395,10 +338,23 @@ class PPTX
     /**
      * @throws FileSaveException
      */
-    protected function close()
+    protected function close(): void
     {
-        if (!@$this->source->close()) {
-            throw new FileSaveException('Unable to close the source PPTX');
+        if (!@$this->archive->close()) {
+            throw new FileSaveException('Unable to close the source PPTX.');
         }
+    }
+
+    public function getArchive(): ZipArchive
+    {
+        return $this->archive;
+    }
+
+    /**
+     * @return ContentType
+     */
+    public function getContentType(): ContentType
+    {
+        return $this->contentType;
     }
 }

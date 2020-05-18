@@ -1,7 +1,9 @@
 <?php
 
-namespace Cpro\Presentation\Exception;
+namespace Cristal\Presentation\Exception;
 
-class FileSaveException extends \Exception
+use Exception;
+
+class FileSaveException extends Exception
 {
 }

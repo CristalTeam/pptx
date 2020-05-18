@@ -1,6 +1,6 @@
 <?php
 
-namespace Cpro\Presentation\Tests;
+namespace Cristal\Presentation\Tests;
 
 use PHPUnit\Framework\TestCase as CoreTestCase;
 

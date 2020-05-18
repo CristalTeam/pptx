@@ -1,7 +1,9 @@
 <?php
 
-namespace Cpro\Presentation\Exception;
+namespace Cristal\Presentation\Exception;
 
-class InvalidFileNameException extends \Exception
+use Exception;
+
+class InvalidFileNameException extends Exception
 {
 }

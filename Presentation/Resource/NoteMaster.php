@@ -2,6 +2,6 @@
 
 namespace Cristal\Presentation\Resource;
 
-class SlideLayout extends XmlResource
+class NoteMaster extends XmlResource
 {
 }
