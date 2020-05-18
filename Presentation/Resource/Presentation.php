@@ -2,29 +2,59 @@
 
 namespace Cpro\Presentation\Resource;
 
+use Cpro\Presentation\PPTX;
+
 class Presentation extends XmlResource
 {
-    public function addResource(GenericResource $resource): string
+    public function __construct(string $target, string $relType, string $contentType, PPTX $document)
     {
-        $rId = parent::addResource($resource);
+        parent::__construct($target, $relType, $contentType, $document);
+    }
 
+    public function addResource(GenericResource $resource): ?string
+    {
         if ($resource instanceof NoteMaster) {
-            if (!count($this->content->xpath('p:notesMasterId'))) {
-                $this->content->addChild('p:notesMasterId');
+            $rId = parent::addResource($resource);
+            if (!count($this->content->xpath('p:notesMasterIdLst'))) {
+                $this->content->addChild('p:notesMasterIdLst');
+
+                $ref = $this->content->xpath('p:notesMasterIdLst')[0]->addChild('notesMasterId');
+                $ref->addAttribute('r:id', $rId, $this->namespaces['r']);
             }
 
-            $ref = $this->content->xpath('p:notesMasterId')[0]->addChild('notesMasterId');
-            $ref['r:id'] = $rId;
+            return $rId;
         }
 
         if ($resource instanceof Slide) {
+            $rId = parent::addResource($resource);
+
             $currentSlides = $this->content->xpath('p:sldIdLst/p:sldId');
 
             $ref = $this->content->xpath('p:sldIdLst')[0]->addChild('sldId');
-            $ref['id'] = (int)end($currentSlides)['id'] + 1;
-            $ref['r:id'] = $rId;
+            $ref->addAttribute('id', (int)end($currentSlides)['id'] + 1);
+            $ref->addAttribute('r:id', $rId, $this->namespaces['r']);
+
+            return $rId;
         }
 
-        return $rId;
+        if ($resource instanceof SlideMaster) {
+            $rId = parent::addResource($resource);
+
+            $ref = $this->content->xpath('p:sldMasterIdLst')[0]->addChild('sldMasterId');
+            $ref->addAttribute('id', self::getUniqueID());
+            $ref->addAttribute('r:id', $rId, $this->namespaces['r']);
+
+            return $rId;
+        }
+
+        if ($resource instanceof HandoutMaster) {
+            $rId = parent::addResource($resource);
+            $ref = $this->content->xpath('p:handoutMasterIdLst')[0]->addChild('handoutMasterId');
+            $ref->addAttribute('r:id', $rId, $this->namespaces['r']);
+
+            return $rId;
+        }
+
+        return null;
     }
 }

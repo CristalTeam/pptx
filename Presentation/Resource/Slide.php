@@ -18,8 +18,8 @@ class Slide extends XmlResource
     protected const TABLE_ROW_TEMPLATE_NAME = 'replaceByNewRow';
 
     /**
-     * @param        $key
-     * @param        $data
+     * @param mixed $key
+     * @param mixed $data
      * @param string $default
      *
      * @return string
@@ -64,7 +64,7 @@ class Slide extends XmlResource
         };
 
         return preg_replace_callback(
-            '/(\{\{)((\<(.*?)\>)+)?(?P<needle>.*?)((\<(.*?)\>)+)?(\}\})/mi',
+            '/({{)((<(.*?)>)+)?(?P<needle>.*?)((<(.*?)>)+)?(}})/mi',
             $sanitizer,
             $source
         );
@@ -145,5 +145,14 @@ class Slide extends XmlResource
                 yield $id => (string)$key[0]->descr;
             }
         }
+    }
+
+    protected function mapResources(): void
+    {
+        parent::mapResources();
+        // Ignore noteSlide prevent failure because, current library doesnt support that, for moment...
+        $this->resources = array_filter($this->resources, static function ($resource) {
+            return !$resource instanceof NoteSlide;
+        });
     }
 }

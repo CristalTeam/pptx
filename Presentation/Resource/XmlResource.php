@@ -2,7 +2,7 @@
 
 namespace Cpro\Presentation\Resource;
 
-use ZipArchive;
+use Cpro\Presentation\PPTX;
 use SimpleXMLElement;
 
 class XmlResource extends GenericResource
@@ -10,6 +10,8 @@ class XmlResource extends GenericResource
     protected const RELS_XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
 
     protected const ID_0 = 2147483647;
+
+    protected static $lastId = self::ID_0;
 
     /**
      * @var SimpleXMLElement
@@ -22,13 +24,27 @@ class XmlResource extends GenericResource
     public $resources = [];
 
     /**
+     * @var mixed
+     */
+    protected $originalContent;
+
+    /**
+     * @var array
+     */
+    protected $namespaces;
+
+    /**
      * XmlResource constructor.
      */
-    public function __construct(string $target, string $type, ZipArchive $zipArchive)
+    public function __construct(string $target, string $relType, string $contentType, PPTX $document)
     {
-        parent::__construct($target, $type, $zipArchive);
+        parent::__construct($target, $relType, $contentType, $document);
 
-        $this->setContent($this->initialZipArchive->getFromName($this->getInitialTarget()));
+        $originalContent = $this->document->getArchive()->getFromName($this->getInitialTarget());
+        $this->setContent($originalContent);
+        $this->originalContent = $originalContent;
+        $this->namespaces = $this->content->getNamespaces(true);
+        $this->setHighestId();
     }
 
     /**
@@ -46,7 +62,7 @@ class XmlResource extends GenericResource
      */
     public function getContent(): string
     {
-        return $this->crlfConversion($this->content->asXml());
+        return $this->content->asXml();
     }
 
     /**
@@ -73,7 +89,7 @@ class XmlResource extends GenericResource
     protected function mapResources(): void
     {
         if (!count($this->resources)) {
-            $content = $this->initialZipArchive->getFromName($this->getInitialRelsName());
+            $content = $this->initialDocument->getArchive()->getFromName($this->getInitialRelsName());
 
             if (!$content) {
                 return;
@@ -82,10 +98,9 @@ class XmlResource extends GenericResource
             $resources = new SimpleXMLElement($content);
 
             foreach ($resources as $resource) {
-                $this->resources[(string)$resource['Id']] = static::createFromNode(
-                    dirname($this->target) . '/' . $resource['Target'],
-                    $resource['Type'],
-                    $this->initialZipArchive
+                $this->resources[(string)$resource['Id']] = $this->initialDocument->getContentType()->getResource(
+                    self::resolveAbsolutePath(dirname($this->target) . '/' . $resource['Target']),
+                    $resource['Type']
                 );
             }
         }
@@ -99,17 +114,13 @@ class XmlResource extends GenericResource
     public function getResources(): array
     {
         $this->mapResources();
-
         return $this->resources;
     }
 
     /**
      * Get a specific resource from its identifier.
-     *
-     * @param $id
-     * @return null|GenericResource
      */
-    public function getResource($id): ?GenericResource
+    public function getResource(string $id): ?GenericResource
     {
         return $this->getResources()[$id] ?? null;
     }
@@ -117,10 +128,9 @@ class XmlResource extends GenericResource
     /**
      * Add a resource to XML and generate an identifier.
      *
-     * @param GenericResource $resource
      * @return string Return the identifier.
      */
-    public function addResource(GenericResource $resource): string
+    public function addResource(GenericResource $resource): ?string
     {
         $this->mapResources();
 
@@ -141,6 +151,7 @@ class XmlResource extends GenericResource
      */
     protected function performSave(): void
     {
+        $this->resetIds();
         parent::performSave();
 
         if (!count($this->getResources())) {
@@ -151,18 +162,54 @@ class XmlResource extends GenericResource
 
         foreach ($this->resources as $id => $resource) {
             $relation = $resourceXML->addChild('Relationship');
-            $relation['Id'] = $id;
-            $relation['Type'] = $resource->getType();
-            $relation['Target'] = $resource->getRelativeTarget($this->getTarget());
+            $relation->addAttribute('Id', $id);
+            $relation->addAttribute('Type', $resource->getRelType());
+            $relation->addAttribute('Target', $resource->getRelativeTarget($this->getTarget()));
         }
 
-        $this->zipArchive->addFromString($this->getRelsName(), $this->crlfConversion($resourceXML->asXml()));
+        $this->document->getArchive()->addFromString($this->getRelsName(), $resourceXML->asXml());
     }
 
-    protected function crlfConversion($content)
+    public function isDraft(): bool
     {
-        $content = trim($content);
-        $content = str_replace(PHP_EOL, "\r\n", $content);
-        return $content;
+        return $this->originalContent !== $this->content->asXML() || parent::isDraft();
+    }
+
+    protected function setHighestId(): void
+    {
+        if (!isset($this->namespaces['r'])) {
+            return;
+        }
+
+        foreach ($this->content->xpath('//@id/..') as $node) {
+            $id = (int)$node['id'];
+
+            if (self::$lastId < $id && $node->attributes($this->namespaces['r'])->id) {
+                self::$lastId = $id;
+            }
+        }
+    }
+
+    /**
+     * Resetting IDs, prevents errors when you a add the same SlideMaster several times.
+     */
+    protected function resetIds(): void
+    {
+        if (!isset($this->namespaces['r'])) {
+            return;
+        }
+
+        foreach ($this->content->xpath('//@id/..') as $node) {
+            $id = (int)$node['id'];
+
+            if ($id > self::ID_0 && $node->attributes($this->namespaces['r'])->id) {
+                $node['id'] = self::getUniqueID();
+            }
+        }
+    }
+
+    public static function getUniqueID(): int
+    {
+        return ++self::$lastId;
     }
 }

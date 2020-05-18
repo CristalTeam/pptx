@@ -2,10 +2,9 @@
 
 namespace Cpro\Presentation\Resource;
 
-use Cpro\Presentation\ContentType;
 use Cpro\Presentation\Exception\InvalidFileNameException;
+use Cpro\Presentation\PPTX;
 use Exception;
-use ZipArchive;
 
 class GenericResource
 {
@@ -22,46 +21,39 @@ class GenericResource
     /**
      * @var string
      */
-    protected $type;
+    protected $relType;
 
     /**
-     * @var ZipArchive
+     * @var string
      */
-    protected $zipArchive;
+    protected $contentType;
 
     /**
-     * @var ZipArchive
+     * @var PPTX
      */
-    protected $initialZipArchive;
+    protected $document;
+
+    /**
+     * @var PPTX
+     */
+    protected $initialDocument;
 
     /**
      * @var null|string
      */
     protected $customContent;
 
+    protected $hasChange = false;
+
     /**
      * Resource constructor.
      */
-    public function __construct(string $target, string $type, ZipArchive $zipArchive)
+    public function __construct(string $target, string $relType, string $contentType, PPTX $document)
     {
         $this->initialTarget = $this->target = $target;
-        $this->type = $type;
-        $this->zipArchive = $this->initialZipArchive = $zipArchive;
-    }
-
-    /**
-     * Create an instance of Resource based on a XML rels node.
-     */
-    public static function createFromNode(string $target, string $type, ZipArchive $archive): GenericResource
-    {
-        $target = static::resolveAbsolutePath($target);
-
-        $className = ContentType::getResourceClassFromType($type);
-        if ($className === self::class) {
-            $className = ContentType::getResourceClassFromFilename($target);
-        }
-
-        return new $className($target, $type, $archive);
+        $this->relType = $relType;
+        $this->document = $this->initialDocument = $document;
+        $this->contentType = $contentType;
     }
 
     /**
@@ -69,13 +61,14 @@ class GenericResource
      */
     public function getContent(): string
     {
-        return $this->customContent ?? $this->initialZipArchive->getFromName($this->getInitialTarget());
+        return $this->customContent ?? $this->initialDocument->getArchive()->getFromName($this->getInitialTarget());
     }
 
     public function setContent(string $content): void
     {
+        $this->hasChange = true;
         $this->customContent = $content;
-        $this->zipArchive->addFromString($this->getTarget(), $content);
+        $this->document->getArchive()->addFromString($this->getTarget(), $content);
     }
 
     /**
@@ -106,7 +99,7 @@ class GenericResource
      */
     public function getPatternPath()
     {
-        return preg_replace('#([^/])[0-9]+?\.(.*?)$#', '$1{x}.$2', $this->getTarget());
+        return preg_replace('#([^/])\d+?\.(.*?)$#', '$1{x}.$2', $this->getTarget());
     }
 
     /**
@@ -140,33 +133,35 @@ class GenericResource
         return $this;
     }
 
-    /**
-     * Return current ContentType value.
-     */
-    public function getType(): string
+    public function getRelType(): string
     {
-        return $this->type;
+        return $this->relType;
+    }
+
+    public function getContentType(): string
+    {
+        return $this->contentType;
+    }
+
+    public function getDocument(): PPTX
+    {
+        return $this->document;
     }
 
     /**
      * Set a new zip archive for work.
-     *
-     * @param ZipArchive $zipArchive
-     * @return ZipArchive
      */
-    public function setZipArchive(ZipArchive $zipArchive): ZipArchive
+    public function setDocument(PPTX $document): PPTX
     {
-        return $this->zipArchive = $zipArchive;
+        return $this->document = $document;
     }
 
     /**
      * Check if the current file has been moved.
-     *
-     * @return bool
      */
     public function isDraft(): bool
     {
-        return $this->initialTarget !== $this->target || $this->initialZipArchive !== $this->zipArchive;
+        return $this->initialTarget !== $this->target || $this->initialDocument !== $this->document || $this->hasChange;
     }
 
     /**
@@ -174,7 +169,7 @@ class GenericResource
      */
     protected function syncInitials(): void
     {
-        $this->initialZipArchive = $this->zipArchive;
+        $this->initialDocument = $this->document;
         $this->initialTarget = $this->target;
     }
 
@@ -183,7 +178,8 @@ class GenericResource
      */
     protected function performSave(): void
     {
-        $this->zipArchive->addFromString($this->getTarget(), $this->getContent());
+        $this->hasChange = false;
+        $this->document->getArchive()->addFromString($this->getTarget(), $this->getContent());
     }
 
     /**
@@ -191,15 +187,21 @@ class GenericResource
      */
     public function save(): void
     {
-        $this->performSave();
-        $this->syncInitials();
+        if ($this->isDraft()) {
+            $this->performSave();
+            $this->syncInitials();
+        }
     }
 
-    public function getKey(): string
+    public function getHashFile(): string
     {
-        return md5($this->initialZipArchive->filename . $this->getContent());
+        return md5($this->getContent());
     }
 
+    /**
+     * Returns the target path as relative reference from the base path.
+     * @see https://github.com/symfony/routing/blob/7da33371d8ecfed6c9d93d87c73749661606f803/Generator/UrlGenerator.php#L336
+     */
     public function getRelativeTarget(string $relPath): string
     {
         $basePath = $relPath;
@@ -208,8 +210,10 @@ class GenericResource
             return '';
         }
 
-        $sourceDirs = explode('/', isset($basePath[0]) && strpos($basePath, '/') === 0 ? substr($basePath, 1) : $basePath);
-        $targetDirs = explode('/', isset($targetPath[0]) && strpos($targetPath, '/') === 0 ? substr($targetPath, 1) : $targetPath);
+        $sourceDirs = explode('/',
+            isset($basePath[0]) && strpos($basePath, '/') === 0 ? substr($basePath, 1) : $basePath);
+        $targetDirs = explode('/',
+            isset($targetPath[0]) && strpos($targetPath, '/') === 0 ? substr($targetPath, 1) : $targetPath);
         array_pop($sourceDirs);
         $targetFile = array_pop($targetDirs);
 
@@ -224,9 +228,13 @@ class GenericResource
         $targetDirs[] = $targetFile;
         $path = str_repeat('../', count($sourceDirs)) . implode('/', $targetDirs);
 
-        return '' === $path ||
-        strpos($path, '/') === 0 ||
-        (
+        // A reference to the same base directory or an empty subdirectory must be prefixed with "./".
+        // This also applies to a segment with a colon character (e.g., "file:colon") that cannot be used
+        // as the first segment of a relative-path reference, as it would be mistaken for a scheme name
+        // (see http://tools.ietf.org/html/rfc3986#section-4.2).
+        return '' === $path
+        || strpos($path, '/') === 0
+        || (
             false !== ($colonPos = strpos($path, ':')) &&
             ($colonPos < ($slashPos = strpos($path, '/')) || false === $slashPos)
         ) ? './' . $path : $path;

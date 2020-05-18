@@ -2,6 +2,6 @@
 
 namespace Cpro\Presentation\Resource;
 
-class SlideLayout extends XmlResource
+class NoteSlide extends XmlResource
 {
 }
