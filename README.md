@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-composer require cpro/pptx
+composer require cristal/pptx
 ```
 
 ## Basic example
@@ -11,7 +11,7 @@ composer require cpro/pptx
 ```php
 <?php
 
-use Cpro\Presentation\PPTX;
+use Cristal\Presentation\PPTX;
 
 require 'vendor/autoload.php';
 

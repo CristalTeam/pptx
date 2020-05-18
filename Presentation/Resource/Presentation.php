@@ -1,8 +1,8 @@
 <?php
 
-namespace Cpro\Presentation\Resource;
+namespace Cristal\Presentation\Resource;
 
-use Cpro\Presentation\PPTX;
+use Cristal\Presentation\PPTX;
 
 class Presentation extends XmlResource
 {

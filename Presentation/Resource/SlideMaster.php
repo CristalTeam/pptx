@@ -1,6 +1,6 @@
 <?php
 
-namespace Cpro\Presentation\Resource;
+namespace Cristal\Presentation\Resource;
 
 class SlideMaster extends XmlResource
 {

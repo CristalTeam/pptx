@@ -1,6 +1,6 @@
 <?php
 
-namespace Cpro\Presentation\Resource;
+namespace Cristal\Presentation\Resource;
 
 use Closure;
 use Generator;

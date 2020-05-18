@@ -1,6 +1,6 @@
 <?php
 
-namespace Cpro\Presentation\Exception;
+namespace Cristal\Presentation\Exception;
 
 use Exception;
 

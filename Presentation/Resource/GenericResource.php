@@ -1,9 +1,9 @@
 <?php
 
-namespace Cpro\Presentation\Resource;
+namespace Cristal\Presentation\Resource;
 
-use Cpro\Presentation\Exception\InvalidFileNameException;
-use Cpro\Presentation\PPTX;
+use Cristal\Presentation\Exception\InvalidFileNameException;
+use Cristal\Presentation\PPTX;
 use Exception;
 
 class GenericResource

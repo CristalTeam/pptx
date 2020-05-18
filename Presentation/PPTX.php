@@ -1,15 +1,15 @@
 <?php
 
-namespace Cpro\Presentation;
+namespace Cristal\Presentation;
 
 use Closure;
-use Cpro\Presentation\Exception\FileOpenException;
-use Cpro\Presentation\Exception\FileSaveException;
-use Cpro\Presentation\Resource\ContentType;
-use Cpro\Presentation\Resource\GenericResource;
-use Cpro\Presentation\Resource\Presentation;
-use Cpro\Presentation\Resource\Slide;
-use Cpro\Presentation\Resource\XmlResource;
+use Cristal\Presentation\Exception\FileOpenException;
+use Cristal\Presentation\Exception\FileSaveException;
+use Cristal\Presentation\Resource\ContentType;
+use Cristal\Presentation\Resource\GenericResource;
+use Cristal\Presentation\Resource\Presentation;
+use Cristal\Presentation\Resource\Slide;
+use Cristal\Presentation\Resource\XmlResource;
 use Exception;
 use ZipArchive;
 
