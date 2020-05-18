@@ -2,8 +2,8 @@
     "name": "cristal/pptx",
     "authors": [
         {
-            "name": "Camille Baronnet",
-            "email": "c.baronnet@cpro.fr"
+            "name": "Cristal",
+            "email": "cristal@cpro.fr"
         }
     ],
     "autoload": {
