@@ -6,6 +6,7 @@
             "email": "cristal@cpro.fr"
         }
     ],
+    "license": "MIT",
     "autoload": {
         "psr-4": {
             "Cristal\\Presentation\\": "Presentation"
