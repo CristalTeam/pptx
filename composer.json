@@ -21,7 +21,7 @@
         "phpunit/phpunit": "^7"
     },
     "require": {
-        "php": "^7.1",
+        "php": ">=7.1",
         "ext-simplexml": "*"
     }
 }
