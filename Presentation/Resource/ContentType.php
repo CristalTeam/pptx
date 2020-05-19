@@ -194,8 +194,20 @@ class ContentType extends GenericResource
      */
     public function addResource(GenericResource $resource): void
     {
-        $fileContentType = $this->extensions[pathinfo($resource->getTarget())['extension']];
+        $fileExtension = pathinfo($resource->getTarget())['extension'];
+        $fileContentType = $this->extensions[$fileExtension] ?? null;
+
         $realContentType = $resource->getContentType();
+
+        // Append unknown format.
+
+        if(null === $fileContentType){
+            $fileContentType = $this->extensions[$fileExtension] = $realContentType;
+
+            $child = $this->content->addChild('Default');
+            $child->addAttribute('Extension', $fileExtension);
+            $child->addAttribute('ContentType', $fileContentType);
+        }
 
         // If the contentType does not exist on generics extensions, then add a specific "Override" child.
 
