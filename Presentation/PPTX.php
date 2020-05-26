@@ -78,33 +78,7 @@ class PPTX
         $res = $this->archive->open($path);
 
         if ($res !== true) {
-            $errors = [
-                0 => 'No error',
-                1 => 'Multi-disk zip archives not supported',
-                2 => 'Renaming temporary file failed',
-                3 => 'Closing zip archive failed',
-                4 => 'Seek error',
-                5 => 'Read error',
-                6 => 'Write error',
-                7 => 'CRC error',
-                8 => 'Containing zip archive was closed',
-                9 => 'No such file',
-                10 => 'File already exists',
-                11 => 'Can\'t open file',
-                12 => 'Failure to create temporary file',
-                13 => 'Zlib error',
-                14 => 'Malloc failure',
-                15 => 'Entry has been changed',
-                16 => 'Compression method not supported',
-                17 => 'Premature EOF',
-                18 => 'Invalid argument',
-                19 => 'Not a zip archive',
-                20 => 'Internal error',
-                21 => 'Zip archive inconsistent',
-                22 => 'Can\'t remove file',
-                23 => 'Entry has been deleted',
-            ];
-            throw new FileOpenException($errors[$res] ?? 'Cannot open PPTX file, error ' . $res . '.');
+            throw new FileOpenException($res->getStatusString());
         }
 
         $this->contentType = new ContentType($this);

@@ -216,5 +216,7 @@ class ContentType extends GenericResource
             $child->addAttribute('PartName', '/' . $resource->getTarget());
             $child->addAttribute('ContentType', $realContentType);
         }
+
+        $this->cachedResources[$resource->getTarget()] = $resource;
     }
 }
