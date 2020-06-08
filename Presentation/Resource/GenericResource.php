@@ -4,9 +4,10 @@ namespace Cristal\Presentation\Resource;
 
 use Cristal\Presentation\Exception\InvalidFileNameException;
 use Cristal\Presentation\PPTX;
+use Cristal\Presentation\ResourceInterface;
 use Exception;
 
-class GenericResource
+class GenericResource implements ResourceInterface
 {
     /**
      * @var string
@@ -110,9 +111,6 @@ class GenericResource
         return $this->initialTarget;
     }
 
-    /**
-     * Get current target file.
-     */
     public function getTarget(): string
     {
         return $this->target;

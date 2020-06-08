@@ -2,16 +2,11 @@
 
 namespace Cristal\Presentation\Resource;
 
-use Cristal\Presentation\PPTX;
+use Cristal\Presentation\ResourceInterface;
 
 class Presentation extends XmlResource
 {
-    public function __construct(string $target, string $relType, string $contentType, PPTX $document)
-    {
-        parent::__construct($target, $relType, $contentType, $document);
-    }
-
-    public function addResource(GenericResource $resource): ?string
+    public function addResource(ResourceInterface $resource): ?string
     {
         if ($resource instanceof NoteMaster) {
             $rId = parent::addResource($resource);

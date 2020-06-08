@@ -139,6 +139,12 @@ class PPTX
 
         foreach($tree as $originalResource){
 
+            if(!$originalResource instanceof GenericResource){
+                $resource = clone $originalResource;
+                $clonedResources[$originalResource->getTarget()] = $resource;
+                continue;
+            }
+
             // Check if resource already exists in the document.
             $existingResource = $this->getContentType()->lookForSimilarFile($originalResource);
 
@@ -210,9 +216,9 @@ class PPTX
     }
 
     /**
-     * @return GenericResource[]
+     * @return ResourceInterface[]
      */
-    public function getResourceTree(GenericResource $resource, array &$resourceList = []): array
+    public function getResourceTree(ResourceInterface $resource, array &$resourceList = []): array
     {
         if(in_array($resource, $resourceList, true)){
             return $resourceList;
