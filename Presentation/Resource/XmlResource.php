@@ -3,6 +3,7 @@
 namespace Cristal\Presentation\Resource;
 
 use Cristal\Presentation\PPTX;
+use Cristal\Presentation\ResourceInterface;
 use SimpleXMLElement;
 
 class XmlResource extends GenericResource
@@ -96,12 +97,23 @@ class XmlResource extends GenericResource
             }
 
             $resources = new SimpleXMLElement($content);
+            $contentType = $this->initialDocument->getContentType();
 
             foreach ($resources as $resource) {
-                $this->resources[(string)$resource['Id']] = $this->initialDocument->getContentType()->getResource(
-                    self::resolveAbsolutePath(dirname($this->target) . '/' . $resource['Target']),
-                    $resource['Type']
-                );
+                if ((string)$resource['TargetMode'] === 'External') {
+                    $res = $contentType->getResource(
+                        (string)$resource['Target'],
+                        $resource['Type'],
+                        true
+                    );
+                } else {
+                    $res = $contentType->getResource(
+                        dirname($this->target) . '/' . $resource['Target'],
+                        $resource['Type']
+                    );
+                }
+
+                $this->resources[(string)$resource['Id']] = $res;
             }
         }
     }
@@ -130,7 +142,7 @@ class XmlResource extends GenericResource
      *
      * @return string Return the identifier.
      */
-    public function addResource(GenericResource $resource): ?string
+    public function addResource(ResourceInterface $resource): ?string
     {
         $this->mapResources();
 
@@ -165,6 +177,10 @@ class XmlResource extends GenericResource
             $relation->addAttribute('Id', $id);
             $relation->addAttribute('Type', $resource->getRelType());
             $relation->addAttribute('Target', $resource->getRelativeTarget($this->getTarget()));
+
+            if($resource instanceof External){
+                $relation->addAttribute('TargetMode', 'External');
+            }
         }
 
         $this->document->getArchive()->addFromString($this->getRelsName(), $resourceXML->asXml());

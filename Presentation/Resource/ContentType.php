@@ -3,6 +3,7 @@
 namespace Cristal\Presentation\Resource;
 
 use Cristal\Presentation\PPTX;
+use Cristal\Presentation\ResourceInterface;
 use SimpleXMLElement;
 
 class ContentType extends GenericResource
@@ -114,11 +115,17 @@ class ContentType extends GenericResource
         return static::CLASSES[$contentType] ?? static::CLASSES['_'];
     }
 
-    public function getResource(string $path, string $relType = '', bool $storeInCache = true): GenericResource
+    public function getResource(string $path, string $relType = '', $external = false, bool $storeInCache = true): ResourceInterface
     {
-        $path = static::resolveAbsolutePath($path);
+        $path = !$external ? static::resolveAbsolutePath($path) : $path;
 
-        if (!isset($this->cachedResources[$path])) {
+        if (isset($this->cachedResources[$path])) {
+            return $this->cachedResources[$path];
+        }
+
+        if($external) {
+            $resource = new External($path, $relType);
+        } else {
             $contentType =
                 $this->overrides[$path]
                 ?? $this->extensions[pathinfo($path)['extension']]
@@ -126,15 +133,13 @@ class ContentType extends GenericResource
 
             $className = static::getResourceClassFromType($contentType);
             $resource = new $className($path, $relType, $contentType, $this->document);
-
-            if ($storeInCache) {
-                $this->cachedResources[$path] = $resource;
-            } else {
-                return $resource;
-            }
         }
 
-        return $this->cachedResources[$path];
+        if ($storeInCache) {
+            $this->cachedResources[$path] = $resource;
+        }
+
+        return $resource;
     }
 
     public function lookForSimilarFile(GenericResource $originalResource)
@@ -142,7 +147,7 @@ class ContentType extends GenericResource
         $startBy = dirname($originalResource->getTarget()) . '/';
         foreach ($this->cachedFilename as $path) {
             if (0 === strpos($path, $startBy) && dirname($path) . '/' === $startBy) {
-                $existingFile = $this->getResource($path, $originalResource->getRelType(), false);
+                $existingFile = $this->getResource($path, $originalResource->getRelType(), false, false);
                 if ($existingFile->getHashFile() === $originalResource->getHashFile()) {
                     return $existingFile;
                 }

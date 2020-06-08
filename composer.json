@@ -22,6 +22,7 @@
     },
     "require": {
         "php": ">=7.1",
-        "ext-simplexml": "*"
+        "ext-simplexml": "*",
+        "ext-zip": "*"
     }
 }
