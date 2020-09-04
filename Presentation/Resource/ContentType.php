@@ -128,8 +128,8 @@ class ContentType extends GenericResource
         } else {
             $contentType =
                 $this->overrides[$path]
-                ?? $this->extensions[pathinfo($path)['extension']]
-                ?? null;
+                ?? $this->extensions[pathinfo($path)['extension'] ?? null]
+                ?? '';
 
             $className = static::getResourceClassFromType($contentType);
             $resource = new $className($path, $relType, $contentType, $this->document);
