@@ -22,7 +22,8 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem. If the PPTX is not well displayed etc. No need to link screenshots if the error is fairly explicit.
 
 **Desktop (please complete the following information):**
- - OS: [e.g. iOS]
+ - OS: [e.g. Windows]
+ - PHP Version: [e.g. 7.4.1]
  - Software used to open the final PPTX [e.g. Powerpoint, LibreOffice Impress, Google Slide]
  - Version [e.g. 2016]
 
