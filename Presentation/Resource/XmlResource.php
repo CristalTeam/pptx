@@ -55,7 +55,7 @@ class XmlResource extends GenericResource
      */
     public function setContent(string $content): void
     {
-        $this->content = new SimpleXMLElement($content);
+        $this->content = new SimpleXMLElement($content, LIBXML_NOWARNING);
     }
 
     /**
@@ -96,7 +96,7 @@ class XmlResource extends GenericResource
                 return;
             }
 
-            $resources = new SimpleXMLElement($content);
+            $resources = new SimpleXMLElement($content, LIBXML_NOWARNING);
             $contentType = $this->initialDocument->getContentType();
 
             foreach ($resources as $resource) {
@@ -170,7 +170,7 @@ class XmlResource extends GenericResource
             return;
         }
 
-        $resourceXML = new SimpleXMLElement(static::RELS_XML);
+        $resourceXML = new SimpleXMLElement(static::RELS_XML, LIBXML_NOWARNING);
 
         foreach ($this->resources as $id => $resource) {
             $relation = $resourceXML->addChild('Relationship');

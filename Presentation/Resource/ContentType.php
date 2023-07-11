@@ -96,7 +96,7 @@ class ContentType extends GenericResource
      */
     public function setContent(string $content): void
     {
-        $this->content = new SimpleXMLElement($content);
+        $this->content = new SimpleXMLElement($content, LIBXML_NOWARNING);
     }
 
     /**
