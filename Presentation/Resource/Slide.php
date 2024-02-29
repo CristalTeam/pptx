@@ -81,7 +81,14 @@ class Slide extends XmlResource
         $tables = $this->content->xpath('//a:tbl/../../../p:nvGraphicFramePr/p:cNvPr');
         foreach ($tables as $table) {
             $tableId = (string)$table->attributes()['name'];
-            $tableRow = $this->content->xpath("//p:cNvPr[@name='$tableId']/../..//a:tr")[1];
+
+            // Try to select the second table row which must be the rows to be copied & templated.
+            // If the row is not found, it means we only have a header to our table, so we can skip it.
+            $tableRow = $this->content->xpath("//p:cNvPr[@name='$tableId']/../..//a:tr")[1] ?? null;
+            if (!$tableRow) {
+                continue;
+            }
+
             $table = $tableRow->xpath('..')[0];
             $rows = $data($tableId);
             if (!$rows) {
