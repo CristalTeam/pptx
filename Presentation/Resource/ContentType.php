@@ -128,7 +128,7 @@ class ContentType extends GenericResource
         } else {
             $contentType =
                 $this->overrides[$path]
-                ?? $this->extensions[pathinfo($path)['extension'] ?? null]
+                ?? $this->extensions[pathinfo($path, PATHINFO_EXTENSION) ?? null]
                 ?? '';
 
             $className = static::getResourceClassFromType($contentType);
@@ -199,7 +199,7 @@ class ContentType extends GenericResource
      */
     public function addResource(GenericResource $resource): void
     {
-        $fileExtension = pathinfo($resource->getTarget())['extension'];
+        $fileExtension = pathinfo($resource->getTarget(), PATHINFO_EXTENSION);
         $fileContentType = $this->extensions[$fileExtension] ?? null;
 
         $realContentType = $resource->getContentType();
