@@ -26,7 +26,11 @@ class Presentation extends XmlResource
             $currentSlides = $this->content->xpath('p:sldIdLst/p:sldId');
 
             $ref = $this->content->xpath('p:sldIdLst')[0]->addChild('sldId');
-            $ref->addAttribute('id', (int)end($currentSlides)['id'] + 1);
+            if(count($currentSlides) > 0)
+                $ref->addAttribute('id', (int)end($currentSlides)['id'] + 1);
+            else
+                $ref->addAttribute('id', 1);
+
             $ref->addAttribute('r:id', $rId, $this->namespaces['r']);
 
             return $rId;
