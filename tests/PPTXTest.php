@@ -16,7 +16,7 @@ class PPTXTest extends TestCase
      */
     protected $pptx;
 
-    public function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
         $this->pptx = new PPTX(__DIR__.'/mock/powerpoint.pptx');
