@@ -31,7 +31,7 @@ class SlideTest extends TestCase
     }
 
     #[Test]
-    public function it_removes_placeholders_after_templating_even_if_there_is_nothing_to_replace_the_placeholder()
+    public function it_removes_placeholders_after_templating_even_if_there_is_nothing_to_replace_the_placeholder(): void
     {
         $this->pptx->template(fn($matches) => self::TEMPLATE_TEXT[$matches['needle']] ?? null);
 
@@ -59,7 +59,7 @@ class SlideTest extends TestCase
     }
 
     #[Test]
-    public function it_replace_the_image_placeholders()
+    public function it_replace_the_image_placeholders(): void
     {
         $slide = $this->pptx->getSlides()[2];
         $images = $slide->getTemplateImages();
