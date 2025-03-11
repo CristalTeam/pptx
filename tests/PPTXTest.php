@@ -24,7 +24,7 @@ class PPTXTest extends TestCase
     }
 
     #[Test]
-    public function it_loads_all_slides()
+    public function it_loads_all_slides(): void
     {
         $this->assertEquals(
             self::POWERPOINT_SLIDE_COUNT,
@@ -33,7 +33,7 @@ class PPTXTest extends TestCase
     }
 
     #[Test]
-    public function it_merges_two_pptx()
+    public function it_merges_two_pptx(): void
     {
         $nbSourceSlides = count($this->pptx->getSlides());
         $pptxToAppend = new PPTX(__DIR__.'/mock/powerpoint.pptx');
