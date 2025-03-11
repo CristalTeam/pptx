@@ -1,3 +1,5 @@
 vendor
 tests/mock/~*
 composer.lock
+
+/.phpunit.cache
