@@ -2,6 +2,7 @@
 
 namespace Cristal\Presentation\Tests;
 
+use PHPUnit\Framework\Attributes\Test;
 use Cristal\Presentation\PPTX;
 
 class SlideTest extends TestCase
@@ -29,9 +30,7 @@ class SlideTest extends TestCase
         $this->pptx = new PPTX(__DIR__.'/mock/powerpoint.pptx');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function it_removes_placeholders_after_templating_even_if_there_is_nothing_to_replace_the_placeholder()
     {
         $this->pptx->template(fn($matches) => self::TEMPLATE_TEXT[$matches['needle']] ?? null);
@@ -59,9 +58,7 @@ class SlideTest extends TestCase
         }
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function it_replace_the_image_placeholders()
     {
         $slide = $this->pptx->getSlides()[2];
