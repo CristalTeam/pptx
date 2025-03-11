@@ -209,9 +209,9 @@ class GenericResource implements ResourceInterface
         }
 
         $sourceDirs = explode('/',
-            isset($basePath[0]) && strpos($basePath, '/') === 0 ? substr($basePath, 1) : $basePath);
+            isset($basePath[0]) && str_starts_with($basePath, '/') ? substr($basePath, 1) : $basePath);
         $targetDirs = explode('/',
-            isset($targetPath[0]) && strpos($targetPath, '/') === 0 ? substr($targetPath, 1) : $targetPath);
+            isset($targetPath[0]) && str_starts_with($targetPath, '/') ? substr($targetPath, 1) : $targetPath);
         array_pop($sourceDirs);
         $targetFile = array_pop($targetDirs);
 
@@ -231,7 +231,7 @@ class GenericResource implements ResourceInterface
         // as the first segment of a relative-path reference, as it would be mistaken for a scheme name
         // (see http://tools.ietf.org/html/rfc3986#section-4.2).
         return '' === $path
-        || strpos($path, '/') === 0
+        || str_starts_with($path, '/')
         || (
             false !== ($colonPos = strpos($path, ':')) &&
             ($colonPos < ($slashPos = strpos($path, '/')) || false === $slashPos)

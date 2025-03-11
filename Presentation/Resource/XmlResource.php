@@ -147,9 +147,7 @@ class XmlResource extends GenericResource
         $this->mapResources();
 
         $ids = array_merge(
-            array_map(static function ($str) {
-                return (int)str_replace('rId', '', $str);
-            }, array_keys($this->resources)),
+            array_map(static fn($str) => (int)str_replace('rId', '', $str), array_keys($this->resources)),
             [0]
         );
 
