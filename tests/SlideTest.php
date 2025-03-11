@@ -5,7 +5,7 @@ namespace Cristal\Presentation\Tests;
 use PHPUnit\Framework\Attributes\Test;
 use Cristal\Presentation\PPTX;
 
-class SlideTest extends TestCase
+final class SlideTest extends TestCase
 {
     /**
      * @var array
