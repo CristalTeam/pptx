@@ -4,7 +4,7 @@ namespace Cristal\Presentation\Tests;
 
 use PHPUnit\Framework\TestCase as CoreTestCase;
 
-final class TestCase extends CoreTestCase
+abstract class TestCase extends CoreTestCase
 {
     const TMP_PATH = __DIR__.'/tmp';
 

@@ -2,10 +2,9 @@
 
 namespace Cristal\Presentation\Tests;
 
-use PHPUnit\Framework\Attributes\Test;
 use Cristal\Presentation\PPTX;
 
-final class SlideTest extends TestCase
+class SlideTest extends TestCase
 {
     /**
      * @var array
@@ -30,8 +29,10 @@ final class SlideTest extends TestCase
         $this->pptx = new PPTX(__DIR__.'/mock/powerpoint.pptx');
     }
 
-    #[Test]
-    public function it_removes_placeholders_after_templating_even_if_there_is_nothing_to_replace_the_placeholder(): void
+    /**
+     * @test
+     */
+    public function it_removes_placeholders_after_templating_even_if_there_is_nothing_to_replace_the_placeholder()
     {
         $this->pptx->template(fn($matches) => self::TEMPLATE_TEXT[$matches['needle']] ?? null);
 
@@ -40,26 +41,28 @@ final class SlideTest extends TestCase
         $templatedPPTX = new PPTX(self::TMP_PATH.'/template.pptx');
         foreach($templatedPPTX->getSlides() as $slide) {
             foreach(self::TEMPLATE_TEXT as $key => $value) {
-                $this->assertNotContains('{{'.$key.'}}', $slide->getContent());
+                $this->assertStringNotContainsString('{{'.$key.'}}', $slide->getContent());
             }
         }
     }
 
     public function it_replace_the_placeholders_with_the_right_text()
     {
-        $this->pptx->template(fn($matches) => self::TEMPLATE[$matches['needle']] ?? null);
+        $this->pptx->template(fn($matches) => self::TEMPLATE_TEXT[$matches['needle']] ?? null);
 
         $this->pptx->saveAs(self::TMP_PATH.'/template.pptx');
 
         $templatedPPTX = new PPTX(self::TMP_PATH.'/template.pptx');
 
-        foreach(self::TEMPLATE as $value) {
-            $this->assertContains($value, $templatedPPTX->getSlides()[1]->getContent());
+        foreach(self::TEMPLATE_TEXT as $value) {
+            $this->assertStringContainsString($value, $templatedPPTX->getSlides()[1]->getContent());
         }
     }
 
-    #[Test]
-    public function it_replace_the_image_placeholders(): void
+    /**
+     * @test
+     */
+    public function it_replace_the_image_placeholders()
     {
         $slide = $this->pptx->getSlides()[2];
         $images = $slide->getTemplateImages();
