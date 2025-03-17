@@ -2,9 +2,10 @@
 
 namespace Cristal\Presentation\Tests;
 
+use PHPUnit\Framework\Attributes\Test;
 use Cristal\Presentation\PPTX;
 
-class PPTXTest extends TestCase
+final class PPTXTest extends TestCase
 {
     /**
      * @var int
@@ -16,16 +17,14 @@ class PPTXTest extends TestCase
      */
     protected $pptx;
 
-    public function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
         $this->pptx = new PPTX(__DIR__.'/mock/powerpoint.pptx');
     }
 
-    /**
-     * @test
-     */
-    public function it_loads_all_slides()
+    #[Test]
+    public function it_loads_all_slides(): void
     {
         $this->assertEquals(
             self::POWERPOINT_SLIDE_COUNT,
@@ -33,10 +32,8 @@ class PPTXTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
-    public function it_merges_two_pptx()
+    #[Test]
+    public function it_merges_two_pptx(): void
     {
         $nbSourceSlides = count($this->pptx->getSlides());
         $pptxToAppend = new PPTX(__DIR__.'/mock/powerpoint.pptx');
