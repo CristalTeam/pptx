@@ -9,7 +9,7 @@ return RectorConfig::configure()
         __DIR__ . '/Presentation',
         __DIR__ . '/tests',
     ])
-    ->withPhpSets(php72: true)
+    ->withPhpSets(php80: true)
     ->withTypeCoverageLevel(0)
     ->withDeadCodeLevel(0)
     ->withCodeQualityLevel(0);

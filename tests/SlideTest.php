@@ -34,9 +34,7 @@ class SlideTest extends TestCase
      */
     public function it_removes_placeholders_after_templating_even_if_there_is_nothing_to_replace_the_placeholder()
     {
-        $this->pptx->template(function ($matches) {
-            return self::TEMPLATE_TEXT[$matches['needle']] ?? null;
-        });
+        $this->pptx->template(fn($matches) => self::TEMPLATE_TEXT[$matches['needle']] ?? null);
 
         $this->pptx->saveAs(self::TMP_PATH.'/template.pptx');
 
@@ -50,9 +48,7 @@ class SlideTest extends TestCase
 
     public function it_replace_the_placeholders_with_the_right_text()
     {
-        $this->pptx->template(function ($matches) {
-            return self::TEMPLATE[$matches['needle']] ?? null;
-        });
+        $this->pptx->template(fn($matches) => self::TEMPLATE[$matches['needle']] ?? null);
 
         $this->pptx->saveAs(self::TMP_PATH.'/template.pptx');
 
@@ -71,9 +67,7 @@ class SlideTest extends TestCase
         $slide = $this->pptx->getSlides()[2];
         $images = $slide->getTemplateImages();
 
-        $slide->images(function ($needle) {
-            return file_get_contents(self::TEMPLATE_IMAGE['image']);
-        });
+        $slide->images(fn($needle) => file_get_contents(self::TEMPLATE_IMAGE['image']));
 
         $this->pptx->saveAs(self::TMP_PATH.'/template.pptx');
 

@@ -45,9 +45,7 @@ class Slide extends XmlResource
     public function template($data): void
     {
         if (!$data instanceof Closure) {
-            $data = function ($matches) use ($data) {
-                return $this->findDataRecursively($matches['needle'], $data);
-            };
+            $data = (fn($matches) => $this->findDataRecursively($matches['needle'], $data));
         }
 
         $xmlString = $this->replaceNeedle($this->getContent(), $data);
@@ -59,9 +57,7 @@ class Slide extends XmlResource
 
     protected function replaceNeedle(string $source, Closure $callback): string
     {
-        $sanitizer = static function ($matches) use ($callback) {
-            return htmlspecialchars($callback($matches));
-        };
+        $sanitizer = (static fn($matches) => htmlspecialchars($callback($matches)));
 
         return preg_replace_callback(
             '/({{)((<(.*?)>)+)?(?P<needle>.*?)((<(.*?)>)+)?(}})/mi',
@@ -73,9 +69,7 @@ class Slide extends XmlResource
     public function table(Closure $data, Closure $finder = null): void
     {
         if (!$finder) {
-            $finder = function (string $needle, array $row): string {
-                return $this->findDataRecursively($needle, $row);
-            };
+            $finder = (fn(string $needle, array $row): string => $this->findDataRecursively($needle, $row));
         }
 
         $tables = $this->content->xpath('//a:tbl/../../../p:nvGraphicFramePr/p:cNvPr');
@@ -105,9 +99,7 @@ class Slide extends XmlResource
                     [, , $rowId] = $matches;
 
                     return $this->replaceNeedle($tableRow->asXML(),
-                        static function ($matches) use ($rows, $rowId, $finder) {
-                            return $finder($matches['needle'], $rows[$rowId]);
-                        });
+                        static fn($matches) => $finder($matches['needle'], $rows[$rowId]));
                 },
                 $this->content->asXML()
             );
@@ -126,9 +118,7 @@ class Slide extends XmlResource
     public function images($data): void
     {
         if (!$data instanceof Closure) {
-            $data = static function ($key) use ($data) {
-                return $data[$key] ?? null;
-            };
+            $data = (static fn($key) => $data[$key] ?? null);
         }
 
         foreach ($this->getTemplateImages() as $id => $key) {
@@ -158,8 +148,6 @@ class Slide extends XmlResource
     {
         parent::mapResources();
         // Ignore noteSlide prevent failure because, current library doesnt support that, for moment...
-        $this->resources = array_filter($this->resources, static function ($resource) {
-            return !$resource instanceof NoteSlide;
-        });
+        $this->resources = array_filter($this->resources, static fn($resource) => !$resource instanceof NoteSlide);
     }
 }
