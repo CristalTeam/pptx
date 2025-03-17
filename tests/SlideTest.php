@@ -58,7 +58,7 @@ class SlideTest extends TestCase
 
         $templatedPPTX = new PPTX(self::TMP_PATH.'/template.pptx');
 
-        foreach(self::TEMPLATE as $key => $value) {
+        foreach(self::TEMPLATE as $value) {
             $this->assertContains($value, $templatedPPTX->getSlides()[1]->getContent());
         }
     }
