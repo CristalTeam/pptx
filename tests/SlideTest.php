@@ -41,21 +41,21 @@ class SlideTest extends TestCase
         $templatedPPTX = new PPTX(self::TMP_PATH.'/template.pptx');
         foreach($templatedPPTX->getSlides() as $slide) {
             foreach(self::TEMPLATE_TEXT as $key => $value) {
-                $this->assertNotContains('{{'.$key.'}}', $slide->getContent());
+                $this->assertStringNotContainsString('{{'.$key.'}}', $slide->getContent());
             }
         }
     }
 
     public function it_replace_the_placeholders_with_the_right_text()
     {
-        $this->pptx->template(fn($matches) => self::TEMPLATE[$matches['needle']] ?? null);
+        $this->pptx->template(fn($matches) => self::TEMPLATE_TEXT[$matches['needle']] ?? null);
 
         $this->pptx->saveAs(self::TMP_PATH.'/template.pptx');
 
         $templatedPPTX = new PPTX(self::TMP_PATH.'/template.pptx');
 
-        foreach(self::TEMPLATE as $value) {
-            $this->assertContains($value, $templatedPPTX->getSlides()[1]->getContent());
+        foreach(self::TEMPLATE_TEXT as $value) {
+            $this->assertStringContainsString($value, $templatedPPTX->getSlides()[1]->getContent());
         }
     }
 
