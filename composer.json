@@ -22,7 +22,7 @@
         "rector/rector": "^2.0"
     },
     "require": {
-        "php": ">=8.1",
+        "php": ">=8.2",
         "ext-simplexml": "*",
         "ext-zip": "*"
     }

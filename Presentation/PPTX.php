@@ -151,7 +151,7 @@ class PPTX
             if(null === $existingResource || $originalResource instanceof XmlResource) {
                 $resource = clone $originalResource;
                 $resource->setDocument($this);
-                $resource->rename(basename($this->getContentType()->findAvailableName($resource->getPatternPath())));
+                $resource->rename(basename((string) $this->getContentType()->findAvailableName($resource->getPatternPath())));
                 $this->contentType->addResource($resource);
 
                 $clonedResources[$originalResource->getTarget()] = $resource;

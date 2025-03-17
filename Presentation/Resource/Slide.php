@@ -26,7 +26,7 @@ class Slide extends XmlResource
      */
     protected function findDataRecursively($key, $data, $default = ''): string
     {
-        foreach (explode(self::TEMPLATE_SEPARATOR, $key) as $segment) {
+        foreach (explode(self::TEMPLATE_SEPARATOR, (string) $key) as $segment) {
             if (isset($data[$segment])) {
                 $data = $data[$segment];
             } else {
@@ -57,7 +57,7 @@ class Slide extends XmlResource
 
     protected function replaceNeedle(string $source, Closure $callback): string
     {
-        $sanitizer = (static fn($matches) => htmlspecialchars($callback($matches)));
+        $sanitizer = (static fn($matches) => htmlspecialchars((string) $callback($matches)));
 
         return preg_replace_callback(
             '/({{)((<(.*?)>)+)?(?P<needle>.*?)((<(.*?)>)+)?(}})/mi',

@@ -146,7 +146,7 @@ class ContentType extends GenericResource
     {
         $startBy = dirname($originalResource->getTarget()) . '/';
         foreach ($this->cachedFilename as $path) {
-            if (str_starts_with($path, $startBy) && dirname($path) . '/' === $startBy) {
+            if (str_starts_with((string) $path, $startBy) && dirname((string) $path) . '/' === $startBy) {
                 $existingFile = $this->getResource($path, $originalResource->getRelType(), false, false);
                 if ($existingFile->getHashFile() === $originalResource->getHashFile()) {
                     return $existingFile;
