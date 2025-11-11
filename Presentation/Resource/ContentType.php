@@ -2,6 +2,7 @@
 
 namespace Cristal\Presentation\Resource;
 
+use Cristal\Presentation\Cache\LRUCache;
 use Cristal\Presentation\PPTX;
 use Cristal\Presentation\ResourceInterface;
 use SimpleXMLElement;
@@ -42,9 +43,14 @@ class ContentType extends GenericResource
     public $content;
 
     /**
-     * @var GenericResource[]
+     * @var LRUCache Cache LRU pour les ressources
      */
     protected $cachedResources;
+
+    /**
+     * @var bool Utiliser le cache LRU
+     */
+    protected $useLRUCache = false;
 
     /**
      * @var array|string[]
@@ -66,6 +72,15 @@ class ContentType extends GenericResource
         parent::__construct('[Content_Types].xml', '', 'application/xml', $document);
 
         $this->setContent($this->initialDocument->getArchive()->getFromName($this->getInitialTarget()));
+
+        // Initialiser le cache LRU si configuré
+        $config = $document->getConfig();
+        if ($config && $config->get('cache_size')) {
+            $this->useLRUCache = true;
+            $this->cachedResources = new LRUCache($config->get('cache_size'));
+        } else {
+            $this->cachedResources = [];
+        }
 
         // Get override mimes.
 
@@ -119,8 +134,16 @@ class ContentType extends GenericResource
     {
         $path = !$external ? static::resolveAbsolutePath($path) : $path;
 
-        if (isset($this->cachedResources[$path])) {
-            return $this->cachedResources[$path];
+        // Vérifier dans le cache
+        if ($this->useLRUCache) {
+            $cached = $this->cachedResources->get($path);
+            if ($cached !== null) {
+                return $cached;
+            }
+        } else {
+            if (isset($this->cachedResources[$path])) {
+                return $this->cachedResources[$path];
+            }
         }
 
         if($external) {
@@ -133,10 +156,19 @@ class ContentType extends GenericResource
 
             $className = static::getResourceClassFromType($contentType);
             $resource = new $className($path, $relType, $contentType, $this->document);
+            
+            // Activer lazy loading si configuré
+            if ($this->document->getConfig()->isEnabled('lazy_loading')) {
+                $resource->setLazyLoading(true);
+            }
         }
 
         if ($storeInCache) {
-            $this->cachedResources[$path] = $resource;
+            if ($this->useLRUCache) {
+                $this->cachedResources->set($path, $resource);
+            } else {
+                $this->cachedResources[$path] = $resource;
+            }
         }
 
         return $resource;
@@ -222,6 +254,20 @@ class ContentType extends GenericResource
             $child->addAttribute('ContentType', $realContentType);
         }
 
-        $this->cachedResources[$resource->getTarget()] = $resource;
+        if ($this->useLRUCache) {
+            $this->cachedResources->set($resource->getTarget(), $resource);
+        } else {
+            $this->cachedResources[$resource->getTarget()] = $resource;
+        }
+    }
+
+    /**
+     * Retourne les statistiques du cache
+     *
+     * @return array|null
+     */
+    public function getCacheStats(): ?array
+    {
+        return $this->useLRUCache ? $this->cachedResources->getStats() : null;
     }
 }

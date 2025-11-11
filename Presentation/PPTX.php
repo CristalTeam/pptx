@@ -268,6 +268,168 @@ class PPTX
     }
 
     /**
+     * Traitement par batch optimisé pour l'ajout de multiples slides
+     * Plus rapide que addSlides car ne rafraîchit qu'une seule fois
+     *
+     * @param array $slides Tableau de slides à ajouter
+     * @param array $options Options de traitement batch
+     * @return PPTX
+     * @throws Exception
+     */
+    public function addSlidesBatch(array $slides, array $options = []): PPTX
+    {
+        $defaultOptions = [
+            'refresh_at_end' => true,      // Rafraîchir à la fin du batch
+            'save_incrementally' => false, // Sauvegarder après chaque slide
+            'collect_stats' => $this->config->isEnabled('collect_stats'),
+        ];
+        
+        $options = array_merge($defaultOptions, $options);
+        
+        // Compteurs pour stats
+        $addedCount = 0;
+        $errorCount = 0;
+        $errors = [];
+        
+        foreach ($slides as $index => $slide) {
+            try {
+                // Désactiver le refresh automatique temporairement
+                $this->addResourceWithoutRefresh($slide);
+                $addedCount++;
+                
+                // Sauvegarder incrémentalement si demandé
+                if ($options['save_incrementally']) {
+                    $this->presentation->save();
+                    $this->contentType->save();
+                }
+            } catch (\Exception $e) {
+                $errorCount++;
+                $errors[] = [
+                    'index' => $index,
+                    'slide' => $slide,
+                    'error' => $e->getMessage(),
+                ];
+                
+                // En cas d'erreur, continuer ou arrêter selon l'option
+                if (!isset($options['continue_on_error']) || !$options['continue_on_error']) {
+                    throw $e;
+                }
+            }
+        }
+        
+        // Sauvegarder et rafraîchir une seule fois à la fin
+        if ($addedCount > 0) {
+            $this->presentation->save();
+            $this->contentType->save();
+            
+            if ($options['refresh_at_end']) {
+                $this->refreshSource();
+            }
+        }
+        
+        // Enregistrer les stats si activé
+        if ($options['collect_stats'] && $this->stats) {
+            // Les stats sont déjà collectées par addResourceWithoutRefresh
+        }
+        
+        return $this;
+    }
+
+    /**
+     * Ajoute une ressource sans rafraîchir la source (pour traitement batch)
+     *
+     * @param GenericResource $res
+     * @return PPTX
+     * @throws Exception
+     */
+    protected function addResourceWithoutRefresh(GenericResource $res): PPTX
+    {
+        $tree = $this->getResourceTree($res);
+
+        /** @var GenericResource[] $clonedResources */
+        $clonedResources = [];
+
+        // Clone, rename, and set new destination...
+
+        foreach($tree as $originalResource){
+
+            if(!$originalResource instanceof GenericResource){
+                $resource = clone $originalResource;
+                $clonedResources[$originalResource->getTarget()] = $resource;
+                continue;
+            }
+
+            // Vérifier si c'est une image et si la déduplication est activée
+            if ($originalResource instanceof Image && $this->config->isEnabled('deduplicate_images')) {
+                $duplicate = $this->imageCache->findDuplicate($originalResource->getContent());
+                if ($duplicate !== null) {
+                    $clonedResources[$originalResource->getTarget()] = $duplicate;
+                    if ($this->config->isEnabled('collect_stats')) {
+                        $this->stats->recordDeduplication();
+                    }
+                    continue;
+                }
+            }
+
+            // Check if resource already exists in the document.
+            $existingResource = $this->getContentType()->lookForSimilarFile($originalResource);
+
+            if(null === $existingResource || $originalResource instanceof XmlResource) {
+                $resource = clone $originalResource;
+                $resource->setDocument($this);
+                $resource->rename(basename($this->getContentType()->findAvailableName($resource->getPatternPath())));
+                $this->contentType->addResource($resource);
+
+                // Configurer l'optimisation pour les images
+                if ($resource instanceof Image) {
+                    $resource->setOptimizationConfig($this->config);
+                    $this->imageCache->registerWithContent($resource->getContent(), $resource);
+                }
+
+                $clonedResources[$originalResource->getTarget()] = $resource;
+            } else {
+                $clonedResources[$originalResource->getTarget()] = $existingResource;
+            }
+        }
+
+        // After the resource is renamed, replace existing "rIds" by the corresponding new resource...
+
+        foreach($clonedResources as $resource){
+            if($resource instanceof XmlResource){
+                foreach($resource->resources as $rId => $subResource){
+                    $resource->resources[$rId] = $clonedResources[$subResource->getTarget()];
+                }
+            }
+
+            // Also, notify the Presentation that have a new interesting object...
+            $this->presentation->addResource($resource);
+
+            if($resource instanceof Slide){
+                $this->slides[] = $res;
+            }
+        }
+
+        // Finally, save all new resources.
+        foreach($clonedResources as $resource){
+            // Collecter les stats pour les images si activé
+            if ($resource instanceof Image && $this->config->isEnabled('collect_stats')) {
+                $originalSize = $resource->getOriginalSize();
+                $compressedSize = $resource->getCompressedSize();
+                if ($originalSize && $compressedSize && $originalSize !== $compressedSize) {
+                    $type = $resource->detectImageType($resource->getContent()) ?? 'unknown';
+                    $this->stats->recordCompression($originalSize, $compressedSize, $type);
+                }
+            }
+            
+            $resource->save();
+        }
+
+        // Ne pas sauvegarder ni rafraîchir ici (fait en batch)
+
+        return $this;
+    }
+
+    /**
      * @return ResourceInterface[]
      */
     public function getResourceTree(ResourceInterface $resource, array &$resourceList = []): array

@@ -47,6 +47,21 @@ class GenericResource implements ResourceInterface
     protected $hasChange = false;
 
     /**
+     * @var bool Indique si le contenu a été chargé
+     */
+    protected $contentLoaded = false;
+
+    /**
+     * @var string|null Contenu en lazy loading
+     */
+    protected $lazyContent = null;
+
+    /**
+     * @var bool Active le lazy loading
+     */
+    protected $lazyLoadingEnabled = false;
+
+    /**
      * Resource constructor.
      */
     public function __construct(string $target, string $relType, string $contentType, PPTX $document)
@@ -62,14 +77,74 @@ class GenericResource implements ResourceInterface
      */
     public function getContent(): string
     {
-        return $this->customContent ?? $this->initialDocument->getArchive()->getFromName($this->getInitialTarget());
+        // Si lazy loading activé et contenu pas encore chargé
+        if ($this->lazyLoadingEnabled && !$this->contentLoaded) {
+            $this->lazyContent = $this->loadContent();
+            $this->contentLoaded = true;
+        }
+
+        return $this->customContent ?? $this->lazyContent ?? $this->initialDocument->getArchive()->getFromName($this->getInitialTarget());
+    }
+
+    /**
+     * Charge le contenu depuis l'archive
+     *
+     * @return string
+     */
+    protected function loadContent(): string
+    {
+        return $this->initialDocument->getArchive()->getFromName($this->getInitialTarget());
     }
 
     public function setContent(string $content): void
     {
         $this->hasChange = true;
         $this->customContent = $content;
+        $this->contentLoaded = true;
+        $this->lazyContent = $content;
         $this->document->getArchive()->addFromString($this->getTarget(), $content);
+    }
+
+    /**
+     * Active le lazy loading pour cette ressource
+     *
+     * @param bool $enabled
+     */
+    public function setLazyLoading(bool $enabled): void
+    {
+        $this->lazyLoadingEnabled = $enabled;
+    }
+
+    /**
+     * Vérifie si le lazy loading est activé
+     *
+     * @return bool
+     */
+    public function isLazyLoadingEnabled(): bool
+    {
+        return $this->lazyLoadingEnabled;
+    }
+
+    /**
+     * Décharge le contenu de la mémoire
+     * Utile pour libérer de la mémoire sur les grandes ressources
+     */
+    public function unloadContent(): void
+    {
+        if ($this->lazyLoadingEnabled && !$this->hasChange) {
+            $this->lazyContent = null;
+            $this->contentLoaded = false;
+        }
+    }
+
+    /**
+     * Vérifie si le contenu est actuellement chargé en mémoire
+     *
+     * @return bool
+     */
+    public function isContentLoaded(): bool
+    {
+        return $this->contentLoaded || $this->customContent !== null;
     }
 
     /**
