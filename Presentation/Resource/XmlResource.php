@@ -200,8 +200,12 @@ class XmlResource extends GenericResource
         foreach ($this->content->xpath('//@id/..') as $node) {
             $id = (int)$node['id'];
 
-            if (self::$lastId < $id && $node->attributes($this->namespaces['r'])->id) {
-                self::$lastId = $id;
+            // Ne considérer que les IDs réels (pas les IDs temporaires > ID_0)
+            // et mettre à jour si on trouve un ID plus grand que le lastId actuel
+            if ($id < self::ID_0 && $node->attributes($this->namespaces['r'])->id) {
+                if (self::$lastId === self::ID_0 || $id > self::$lastId) {
+                    self::$lastId = $id;
+                }
             }
         }
     }

@@ -8,7 +8,7 @@ class TestCase extends CoreTestCase
 {
     const TMP_PATH = __DIR__.'/tmp';
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -17,7 +17,7 @@ class TestCase extends CoreTestCase
         }
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         parent::tearDown();
 

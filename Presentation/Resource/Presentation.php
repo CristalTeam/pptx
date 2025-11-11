@@ -23,10 +23,8 @@ class Presentation extends XmlResource
         if ($resource instanceof Slide) {
             $rId = parent::addResource($resource);
 
-            $currentSlides = $this->content->xpath('p:sldIdLst/p:sldId');
-
             $ref = $this->content->xpath('p:sldIdLst')[0]->addChild('sldId');
-            $ref->addAttribute('id', (int)end($currentSlides)['id'] + 1);
+            $ref->addAttribute('id', self::getUniqueID());
             $ref->addAttribute('r:id', $rId, $this->namespaces['r']);
 
             return $rId;

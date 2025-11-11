@@ -23,7 +23,7 @@ class SlideTest extends TestCase
      */
     protected $pptx;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         $this->pptx = new PPTX(__DIR__.'/mock/powerpoint.pptx');
@@ -43,7 +43,7 @@ class SlideTest extends TestCase
         $templatedPPTX = new PPTX(self::TMP_PATH.'/template.pptx');
         foreach($templatedPPTX->getSlides() as $slide) {
             foreach(self::TEMPLATE_TEXT as $key => $value) {
-                $this->assertNotContains('{{'.$key.'}}', $slide->getContent());
+                $this->assertStringNotContainsString('{{'.$key.'}}', $slide->getContent());
             }
         }
     }

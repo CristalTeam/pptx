@@ -60,7 +60,7 @@ class Slide extends XmlResource
     protected function replaceNeedle(string $source, Closure $callback): string
     {
         $sanitizer = static function ($matches) use ($callback) {
-            return htmlspecialchars($callback($matches));
+            return htmlspecialchars((string)$callback($matches));
         };
 
         return preg_replace_callback(
@@ -70,7 +70,7 @@ class Slide extends XmlResource
         );
     }
 
-    public function table(Closure $data, Closure $finder = null): void
+    public function table(Closure $data, ?Closure $finder = null): void
     {
         if (!$finder) {
             $finder = function (string $needle, array $row): string {
