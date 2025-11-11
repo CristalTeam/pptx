@@ -3,13 +3,17 @@
 namespace Cristal\Presentation;
 
 use Closure;
+use Cristal\Presentation\Cache\ImageCache;
+use Cristal\Presentation\Config\OptimizationConfig;
 use Cristal\Presentation\Exception\FileOpenException;
 use Cristal\Presentation\Exception\FileSaveException;
 use Cristal\Presentation\Resource\ContentType;
 use Cristal\Presentation\Resource\GenericResource;
+use Cristal\Presentation\Resource\Image;
 use Cristal\Presentation\Resource\Presentation;
 use Cristal\Presentation\Resource\Slide;
 use Cristal\Presentation\Resource\XmlResource;
+use Cristal\Presentation\Stats\OptimizationStats;
 use Exception;
 use ZipArchive;
 
@@ -46,13 +50,33 @@ class PPTX
     protected $contentType;
 
     /**
+     * @var OptimizationConfig
+     */
+    protected $config;
+
+    /**
+     * @var ImageCache
+     */
+    protected $imageCache;
+
+    /**
+     * @var OptimizationStats
+     */
+    protected $stats;
+
+    /**
      * Presentation constructor.
      *
+     * @param string $path Chemin vers le fichier PPTX
+     * @param array $options Options d'optimisation (optionnel)
      * @throws Exception
      */
-    public function __construct(string $path)
+    public function __construct(string $path, array $options = [])
     {
         $this->filename = $path;
+        $this->config = new OptimizationConfig($options);
+        $this->imageCache = new ImageCache();
+        $this->stats = new OptimizationStats();
 
         if (!file_exists($path)) {
             throw new FileOpenException('Unable to open the source PPTX. Path does not exist.');
@@ -145,6 +169,18 @@ class PPTX
                 continue;
             }
 
+            // Vérifier si c'est une image et si la déduplication est activée
+            if ($originalResource instanceof Image && $this->config->isEnabled('deduplicate_images')) {
+                $duplicate = $this->imageCache->findDuplicate($originalResource->getContent());
+                if ($duplicate !== null) {
+                    $clonedResources[$originalResource->getTarget()] = $duplicate;
+                    if ($this->config->isEnabled('collect_stats')) {
+                        $this->stats->recordDeduplication();
+                    }
+                    continue;
+                }
+            }
+
             // Check if resource already exists in the document.
             $existingResource = $this->getContentType()->lookForSimilarFile($originalResource);
 
@@ -153,6 +189,12 @@ class PPTX
                 $resource->setDocument($this);
                 $resource->rename(basename($this->getContentType()->findAvailableName($resource->getPatternPath())));
                 $this->contentType->addResource($resource);
+
+                // Configurer l'optimisation pour les images
+                if ($resource instanceof Image) {
+                    $resource->setOptimizationConfig($this->config);
+                    $this->imageCache->registerWithContent($resource->getContent(), $resource);
+                }
 
                 $clonedResources[$originalResource->getTarget()] = $resource;
             } else {
@@ -179,6 +221,16 @@ class PPTX
 
         // Finally, save all new resources.
         foreach($clonedResources as $resource){
+            // Collecter les stats pour les images si activé
+            if ($resource instanceof Image && $this->config->isEnabled('collect_stats')) {
+                $originalSize = $resource->getOriginalSize();
+                $compressedSize = $resource->getCompressedSize();
+                if ($originalSize && $compressedSize && $originalSize !== $compressedSize) {
+                    $type = $resource->detectImageType($resource->getContent()) ?? 'unknown';
+                    $this->stats->recordCompression($originalSize, $compressedSize, $type);
+                }
+            }
+            
             $resource->save();
         }
 
@@ -336,5 +388,50 @@ class PPTX
     public function getContentType(): ContentType
     {
         return $this->contentType;
+    }
+
+    /**
+     * Retourne la configuration d'optimisation
+     *
+     * @return OptimizationConfig
+     */
+    public function getConfig(): OptimizationConfig
+    {
+        return $this->config;
+    }
+
+    /**
+     * Retourne le cache d'images
+     *
+     * @return ImageCache
+     */
+    public function getImageCache(): ImageCache
+    {
+        return $this->imageCache;
+    }
+
+    /**
+     * Retourne les statistiques d'optimisation
+     *
+     * @return array
+     */
+    public function getOptimizationStats(): array
+    {
+        $stats = $this->stats->getReport();
+        $cacheStats = $this->imageCache->getStats();
+        
+        return array_merge($stats, [
+            'cache_stats' => $cacheStats,
+        ]);
+    }
+
+    /**
+     * Retourne un résumé des optimisations
+     *
+     * @return string
+     */
+    public function getOptimizationSummary(): string
+    {
+        return $this->stats->getSummary();
     }
 }
