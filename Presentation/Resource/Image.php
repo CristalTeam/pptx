@@ -51,7 +51,7 @@ class Image extends GenericResource
     }
 
     /**
-     * Optimise une image (compression + redimensionnement)
+     * Optimise une image (compression + redimensionnement + conversion WebP optionnelle)
      *
      * @param string $content Contenu de l'image
      * @return string Contenu optimisé
@@ -75,7 +75,19 @@ class Image extends GenericResource
             $image = $this->resizeIfNeeded($image);
         }
         
-        // Compression selon le type
+        // Conversion WebP si activée et supportée
+        if ($this->config->isEnabled('convert_to_webp') && function_exists('imagewebp')) {
+            ob_start();
+            $quality = $this->config->get('image_quality');
+            if (imagewebp($image, null, $quality)) {
+                $optimized = ob_get_clean();
+                imagedestroy($image);
+                return $optimized;
+            }
+            ob_end_clean();
+        }
+        
+        // Sinon, compression selon le type
         $optimized = $this->compressImage($image, $imageType);
         
         imagedestroy($image);
@@ -186,6 +198,38 @@ class Image extends GenericResource
         $content = ob_get_clean();
         
         return $result ? $content : false;
+    }
+
+    /**
+     * Convertit une image en WebP
+     *
+     * @param string $content Contenu de l'image
+     * @param int $quality Qualité (1-100)
+     * @return string|false Contenu WebP ou false si erreur
+     */
+    public function convertToWebP(string $content, int $quality = 85)
+    {
+        if (!function_exists('imagewebp')) {
+            return false;
+        }
+
+        $image = @imagecreatefromstring($content);
+        
+        if ($image === false) {
+            return false;
+        }
+        
+        // Préserver la transparence
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+        
+        ob_start();
+        $result = imagewebp($image, null, $quality);
+        $webp = ob_get_clean();
+        
+        imagedestroy($image);
+        
+        return $result ? $webp : false;
     }
 
     /**

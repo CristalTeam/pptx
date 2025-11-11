@@ -14,6 +14,8 @@ use Cristal\Presentation\Resource\Presentation;
 use Cristal\Presentation\Resource\Slide;
 use Cristal\Presentation\Resource\XmlResource;
 use Cristal\Presentation\Stats\OptimizationStats;
+use Cristal\Presentation\Validator\ImageValidator;
+use Cristal\Presentation\Validator\PresentationValidator;
 use Exception;
 use ZipArchive;
 
@@ -65,6 +67,11 @@ class PPTX
     protected $stats;
 
     /**
+     * @var PresentationValidator|null
+     */
+    protected $validator;
+
+    /**
      * Presentation constructor.
      *
      * @param string $path Chemin vers le fichier PPTX
@@ -77,6 +84,11 @@ class PPTX
         $this->config = new OptimizationConfig($options);
         $this->imageCache = new ImageCache();
         $this->stats = new OptimizationStats();
+        
+        // Initialiser le validateur si activé
+        if ($this->config->isEnabled('validate_images')) {
+            $this->validator = new PresentationValidator($this->config);
+        }
 
         if (!file_exists($path)) {
             throw new FileOpenException('Unable to open the source PPTX. Path does not exist.');
@@ -595,5 +607,68 @@ class PPTX
     public function getOptimizationSummary(): string
     {
         return $this->stats->getSummary();
+    }
+
+    /**
+     * Valide la présentation (slides et ressources)
+     *
+     * @return array Rapport de validation
+     */
+    public function validate(): array
+    {
+        if (!$this->validator) {
+            $this->validator = new PresentationValidator($this->config);
+        }
+
+        $resources = [];
+        foreach ($this->slides as $slide) {
+            $resources = array_merge($resources, array_values($slide->getResources()));
+        }
+
+        return $this->validator->validatePresentation($this->slides, $resources);
+    }
+
+    /**
+     * Valide uniquement les images
+     *
+     * @return array Rapport de validation des images
+     */
+    public function validateImages(): array
+    {
+        $imageValidator = new ImageValidator($this->config);
+        $report = [
+            'total' => 0,
+            'valid' => 0,
+            'invalid' => 0,
+            'details' => [],
+        ];
+
+        foreach ($this->slides as $slide) {
+            foreach ($slide->getResources() as $resource) {
+                if ($resource instanceof Image) {
+                    $report['total']++;
+                    try {
+                        $content = $resource->getContent();
+                        $imageReport = $imageValidator->validateWithReport($content);
+                        
+                        $report['details'][$resource->getTarget()] = $imageReport;
+                        
+                        if ($imageReport['valid']) {
+                            $report['valid']++;
+                        } else {
+                            $report['invalid']++;
+                        }
+                    } catch (\Exception $e) {
+                        $report['invalid']++;
+                        $report['details'][$resource->getTarget()] = [
+                            'valid' => false,
+                            'errors' => [$e->getMessage()],
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $report;
     }
 }
