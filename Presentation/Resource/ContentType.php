@@ -41,6 +41,8 @@ class ContentType extends GenericResource
         // Core Properties (Dublin Core metadata)
         'application/vnd.openxmlformats-package.core-properties+xml' => CoreProperties::class,
         'application/vnd.openxmlformats-officedocument.extended-properties+xml' => XmlResource::class,
+        // Charts (DrawingML)
+        'application/vnd.openxmlformats-officedocument.drawingml.chart+xml' => Chart::class,
         // Images - Standard formats
         'image/png' => Image::class,
         'image/jpeg' => Image::class,
