@@ -19,7 +19,7 @@ class TestCase extends CoreTestCase
 
     public function tearDown(): void
     {
-        parent::tearDown();
+        /*parent::tearDown();
 
         $files = array_diff(glob(self::TMP_PATH.'/*'), ['.', '..']);
 
@@ -27,6 +27,6 @@ class TestCase extends CoreTestCase
             unlink($file);
         }
 
-        rmdir(self::TMP_PATH);
+        rmdir(self::TMP_PATH);*/
     }
 }

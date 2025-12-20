@@ -9,7 +9,7 @@ class PPTXTest extends TestCase
     /**
      * @var int
      */
-    const POWERPOINT_SLIDE_COUNT = 3;
+    const POWERPOINT_SLIDE_COUNT = 2;
 
     /**
      * @var PPTX
@@ -19,7 +19,7 @@ class PPTXTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
-        $this->pptx = new PPTX(__DIR__.'/mock/powerpoint.pptx');
+        $this->pptx = new PPTX(__DIR__.'/mock/garde.pptx');
     }
 
     /**
@@ -39,7 +39,7 @@ class PPTXTest extends TestCase
     public function it_merges_two_pptx()
     {
         $nbSourceSlides = count($this->pptx->getSlides());
-        $pptxToAppend = new PPTX(__DIR__.'/mock/powerpoint.pptx');
+        $pptxToAppend = new PPTX(__DIR__.'/mock/pc.pptx');
 
         $this->pptx->addSlides($pptxToAppend->getSlides());
         $this->pptx->saveAs(self::TMP_PATH.'/merge.pptx');
