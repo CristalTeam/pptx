@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation;
 
 use Closure;
@@ -19,64 +21,38 @@ use Cristal\Presentation\Validator\PresentationValidator;
 use Exception;
 use ZipArchive;
 
+/**
+ * Main class for manipulating PowerPoint (PPTX) files.
+ */
 class PPTX
 {
-    /**
-     * @var ZipArchive
-     */
-    protected $archive;
+    protected ZipArchive $archive;
+
+    /** @var Slide[] */
+    protected array $slides = [];
+
+    protected Presentation $presentation;
+
+    protected string $filename;
+
+    protected string $tmpName;
+
+    protected ContentType $contentType;
+
+    protected OptimizationConfig $config;
+
+    protected ImageCache $imageCache;
+
+    protected OptimizationStats $stats;
+
+    protected ?PresentationValidator $validator = null;
 
     /**
-     * @var Slide[]
-     */
-    protected $slides = [];
-
-    /**
-     * @var Presentation
-     */
-    protected $presentation;
-
-    /**
-     * @var string
-     */
-    protected $filename;
-
-    /**
-     * @var string
-     */
-    protected $tmpName;
-
-    /**
-     * @var ContentType
-     */
-    protected $contentType;
-
-    /**
-     * @var OptimizationConfig
-     */
-    protected $config;
-
-    /**
-     * @var ImageCache
-     */
-    protected $imageCache;
-
-    /**
-     * @var OptimizationStats
-     */
-    protected $stats;
-
-    /**
-     * @var PresentationValidator|null
-     */
-    protected $validator;
-
-    /**
-     * Presentation constructor.
+     * PPTX constructor.
      *
-     * @param string $path Chemin vers le fichier PPTX
-     * @param array $options Options d'optimisation (optionnel)
-     * @throws Exception
+     * @param string $path Path to the PPTX file
+     * @param array $options Optimization options (optional)
+     * @throws FileOpenException
      */
     public function __construct(string $path, array $options = [])
     {
@@ -84,8 +60,8 @@ class PPTX
         $this->config = new OptimizationConfig($options);
         $this->imageCache = new ImageCache();
         $this->stats = new OptimizationStats();
-        
-        // Initialiser le validateur si activé
+
+        // Initialize validator if enabled
         if ($this->config->isEnabled('validate_images')) {
             $this->validator = new PresentationValidator($this->config);
         }
@@ -108,17 +84,21 @@ class PPTX
      *
      * @throws FileOpenException
      */
-    public function openFile(string $path): PPTX
+    public function openFile(string $path): self
     {
         $this->archive = new ZipArchive();
         $res = $this->archive->open($path);
 
         if ($res !== true) {
-            throw new FileOpenException($res->getStatusString());
+            throw new FileOpenException($this->archive->getStatusString());
         }
 
         $this->contentType = new ContentType($this);
-        $this->presentation = $this->contentType->getResource('ppt/presentation.xml');
+        $resource = $this->contentType->getResource('ppt/presentation.xml');
+        if (!$resource instanceof Presentation) {
+            throw new FileOpenException('Invalid presentation file: ppt/presentation.xml');
+        }
+        $this->presentation = $resource;
 
         $this->loadSlides();
 
@@ -128,13 +108,16 @@ class PPTX
     /**
      * Read existing slides.
      */
-    protected function loadSlides(): PPTX
+    protected function loadSlides(): self
     {
         $this->slides = [];
 
-        foreach ($this->presentation->content->xpath('p:sldIdLst/p:sldId') as $slide) {
+        foreach ($this->presentation->getXmlContent()->xpath('p:sldIdLst/p:sldId') as $slide) {
             $id = $slide->xpath('@r:id')[0]['id'] . '';
-            $this->slides[] = $this->presentation->getResource($id);
+            $resource = $this->presentation->getResource($id);
+            if ($resource instanceof Slide) {
+                $this->slides[] = $resource;
+            }
         }
 
         return $this;
@@ -156,7 +139,7 @@ class PPTX
      *
      * @throws Exception
      */
-    public function addSlide(Slide $slide): PPTX
+    public function addSlide(Slide $slide): self
     {
         return $this->addResource($slide);
     }
@@ -164,95 +147,159 @@ class PPTX
     /**
      * Add a resource and its dependency inside this document.
      */
-    public function addResource(GenericResource $res): PPTX
+    public function addResource(GenericResource $res): self
     {
-        $tree = $this->getResourceTree($res);
+        $this->processResourceTree($res);
 
-        /** @var GenericResource[] $clonedResources */
-        $clonedResources = [];
-
-        // Clone, rename, and set new destination...
-
-        foreach($tree as $originalResource){
-
-            if(!$originalResource instanceof GenericResource){
-                $resource = clone $originalResource;
-                $clonedResources[$originalResource->getTarget()] = $resource;
-                continue;
-            }
-
-            // Vérifier si c'est une image et si la déduplication est activée
-            if ($originalResource instanceof Image && $this->config->isEnabled('deduplicate_images')) {
-                $duplicate = $this->imageCache->findDuplicate($originalResource->getContent());
-                if ($duplicate !== null) {
-                    $clonedResources[$originalResource->getTarget()] = $duplicate;
-                    if ($this->config->isEnabled('collect_stats')) {
-                        $this->stats->recordDeduplication();
-                    }
-                    continue;
-                }
-            }
-
-            // Check if resource already exists in the document.
-            $existingResource = $this->getContentType()->lookForSimilarFile($originalResource);
-
-            if(null === $existingResource || $originalResource instanceof XmlResource) {
-                $resource = clone $originalResource;
-                $resource->setDocument($this);
-                $resource->rename(basename($this->getContentType()->findAvailableName($resource->getPatternPath())));
-                $this->contentType->addResource($resource);
-
-                // Configurer l'optimisation pour les images
-                if ($resource instanceof Image) {
-                    $resource->setOptimizationConfig($this->config);
-                    $this->imageCache->registerWithContent($resource->getContent(), $resource);
-                }
-
-                $clonedResources[$originalResource->getTarget()] = $resource;
-            } else {
-                $clonedResources[$originalResource->getTarget()] = $existingResource;
-            }
-        }
-
-        // After the resource is renamed, replace existing "rIds" by the corresponding new resource...
-
-        foreach($clonedResources as $resource){
-            if($resource instanceof XmlResource){
-                foreach($resource->resources as $rId => $subResource){
-                    $resource->resources[$rId] = $clonedResources[$subResource->getTarget()];
-                }
-            }
-
-            // Also, notify the Presentation that have a new interesting object...
-            $this->presentation->addResource($resource);
-
-            if($resource instanceof Slide){
-                $this->slides[] = $res;
-            }
-        }
-
-        // Finally, save all new resources.
-        foreach($clonedResources as $resource){
-            // Collecter les stats pour les images si activé
-            if ($resource instanceof Image && $this->config->isEnabled('collect_stats')) {
-                $originalSize = $resource->getOriginalSize();
-                $compressedSize = $resource->getCompressedSize();
-                if ($originalSize && $compressedSize && $originalSize !== $compressedSize) {
-                    $type = $resource->detectImageType($resource->getContent()) ?? 'unknown';
-                    $this->stats->recordCompression($originalSize, $compressedSize, $type);
-                }
-            }
-            
-            $resource->save();
-        }
-
-        // And the presentation.
+        // Save presentation and content type
         $this->presentation->save();
         $this->contentType->save();
 
         $this->refreshSource();
 
         return $this;
+    }
+
+    /**
+     * Process a resource tree: clone, rename, and save all resources.
+     *
+     * @param GenericResource $res The resource to process
+     * @return array<string, ResourceInterface> Array of cloned resources
+     */
+    protected function processResourceTree(GenericResource $res): array
+    {
+        $tree = $this->getResourceTree($res);
+
+        /** @var array<string, ResourceInterface> $clonedResources */
+        $clonedResources = [];
+
+        // Clone, rename, and set new destination
+        foreach ($tree as $originalResource) {
+            $clonedResources[$originalResource->getTarget()] = $this->cloneOrReuseResource($originalResource);
+        }
+
+        // Update resource references
+        $this->updateResourceReferences($clonedResources);
+
+        // Notify presentation and register slides
+        $this->registerResourcesWithPresentation($clonedResources, $res);
+
+        // Save all cloned resources
+        $this->saveClonedResources($clonedResources);
+
+        return $clonedResources;
+    }
+
+    /**
+     * Clone or reuse an existing resource.
+     *
+     * @param ResourceInterface $originalResource The original resource
+     * @return ResourceInterface The cloned or reused resource
+     */
+    protected function cloneOrReuseResource(ResourceInterface $originalResource): ResourceInterface
+    {
+        if (!$originalResource instanceof GenericResource) {
+            return clone $originalResource;
+        }
+
+        // Check for image deduplication
+        if ($originalResource instanceof Image && $this->config->isEnabled('deduplicate_images')) {
+            $duplicate = $this->imageCache->findDuplicate($originalResource->getContent());
+            if ($duplicate !== null) {
+                if ($this->config->isEnabled('collect_stats')) {
+                    $this->stats->recordDeduplication();
+                }
+
+                return $duplicate;
+            }
+        }
+
+        // Check if resource already exists in the document
+        $existingResource = $this->getContentType()->lookForSimilarFile($originalResource);
+
+        if ($existingResource !== null && !$originalResource instanceof XmlResource) {
+            return $existingResource;
+        }
+
+        // Clone and configure the resource
+        $resource = clone $originalResource;
+        $resource->setDocument($this);
+        $resource->rename(basename($this->getContentType()->findAvailableName($resource->getPatternPath())));
+        $this->contentType->addResource($resource);
+
+        // Configure optimization for images
+        if ($resource instanceof Image) {
+            $resource->setOptimizationConfig($this->config);
+            $this->imageCache->registerWithContent($resource->getContent(), $resource);
+        }
+
+        return $resource;
+    }
+
+    /**
+     * Update resource references after cloning.
+     *
+     * @param array<string, ResourceInterface> $clonedResources
+     */
+    protected function updateResourceReferences(array $clonedResources): void
+    {
+        foreach ($clonedResources as $resource) {
+            if ($resource instanceof XmlResource) {
+                foreach ($resource->getResources() as $rId => $subResource) {
+                    $resource->setResource($rId, $clonedResources[$subResource->getTarget()]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Register resources with presentation and track slides.
+     *
+     * @param array<string, ResourceInterface> $clonedResources
+     * @param GenericResource $originalResource
+     */
+    protected function registerResourcesWithPresentation(array $clonedResources, GenericResource $originalResource): void
+    {
+        foreach ($clonedResources as $resource) {
+            $this->presentation->addResource($resource);
+
+            if ($resource instanceof Slide) {
+                $this->slides[] = $resource;
+            }
+        }
+    }
+
+    /**
+     * Save all cloned resources and collect stats.
+     *
+     * @param array<string, ResourceInterface> $clonedResources
+     */
+    protected function saveClonedResources(array $clonedResources): void
+    {
+        foreach ($clonedResources as $resource) {
+            // Collect stats for images if enabled
+            if ($resource instanceof Image && $this->config->isEnabled('collect_stats')) {
+                $this->collectImageStats($resource);
+            }
+
+            $resource->save();
+        }
+    }
+
+    /**
+     * Collect compression stats for an image.
+     *
+     * @param Image $resource
+     */
+    protected function collectImageStats(Image $resource): void
+    {
+        $originalSize = $resource->getOriginalSize();
+        $compressedSize = $resource->getCompressedSize();
+
+        if ($originalSize && $compressedSize && $originalSize !== $compressedSize) {
+            $type = $resource->detectImageType($resource->getContent()) ?? 'unknown';
+            $this->stats->recordCompression($originalSize, $compressedSize, $type);
+        }
     }
 
     /**
@@ -268,9 +315,10 @@ class PPTX
     /**
      * Import multiple slides object.
      *
+     * @param Slide[] $slides
      * @throws Exception
      */
-    public function addSlides(array $slides): PPTX
+    public function addSlides(array $slides): self
     {
         foreach ($slides as $slide) {
             $this->addSlide($slide);
@@ -280,163 +328,62 @@ class PPTX
     }
 
     /**
-     * Traitement par batch optimisé pour l'ajout de multiples slides
-     * Plus rapide que addSlides car ne rafraîchit qu'une seule fois
+     * Optimized batch processing for adding multiple slides.
+     * Faster than addSlides because it only refreshes once at the end.
      *
-     * @param array $slides Tableau de slides à ajouter
-     * @param array $options Options de traitement batch
-     * @return PPTX
+     * @param Slide[] $slides Array of slides to add
+     * @param array $options Processing options
      * @throws Exception
+     * @return self
      */
-    public function addSlidesBatch(array $slides, array $options = []): PPTX
+    public function addSlidesBatch(array $slides, array $options = []): self
     {
         $defaultOptions = [
-            'refresh_at_end' => true,      // Rafraîchir à la fin du batch
-            'save_incrementally' => false, // Sauvegarder après chaque slide
+            'refresh_at_end' => true,
+            'save_incrementally' => false,
             'collect_stats' => $this->config->isEnabled('collect_stats'),
+            'continue_on_error' => false,
         ];
-        
+
         $options = array_merge($defaultOptions, $options);
-        
-        // Compteurs pour stats
+
         $addedCount = 0;
-        $errorCount = 0;
-        $errors = [];
-        
-        foreach ($slides as $index => $slide) {
-            try {
-                // Désactiver le refresh automatique temporairement
-                $this->addResourceWithoutRefresh($slide);
-                $addedCount++;
-                
-                // Sauvegarder incrémentalement si demandé
-                if ($options['save_incrementally']) {
-                    $this->presentation->save();
-                    $this->contentType->save();
-                }
-            } catch (\Exception $e) {
-                $errorCount++;
-                $errors[] = [
-                    'index' => $index,
-                    'slide' => $slide,
-                    'error' => $e->getMessage(),
-                ];
-                
-                // En cas d'erreur, continuer ou arrêter selon l'option
-                if (!isset($options['continue_on_error']) || !$options['continue_on_error']) {
-                    throw $e;
-                }
+
+        foreach ($slides as $slide) {
+            $this->processResourceTree($slide);
+            $addedCount++;
+
+            // Save incrementally if requested
+            if ($options['save_incrementally']) {
+                $this->presentation->save();
+                $this->contentType->save();
             }
         }
-        
-        // Sauvegarder et rafraîchir une seule fois à la fin
+
+        // Save and refresh once at the end
         if ($addedCount > 0) {
             $this->presentation->save();
             $this->contentType->save();
-            
+
             if ($options['refresh_at_end']) {
                 $this->refreshSource();
             }
         }
-        
-        // Enregistrer les stats si activé
-        if ($options['collect_stats'] && $this->stats) {
-            // Les stats sont déjà collectées par addResourceWithoutRefresh
-        }
-        
+
         return $this;
     }
 
     /**
-     * Ajoute une ressource sans rafraîchir la source (pour traitement batch)
+     * Add a resource without refreshing the source (for batch processing).
      *
      * @param GenericResource $res
-     * @return PPTX
      * @throws Exception
+     * @return self
+     * @deprecated Use processResourceTree() instead
      */
-    protected function addResourceWithoutRefresh(GenericResource $res): PPTX
+    protected function addResourceWithoutRefresh(GenericResource $res): self
     {
-        $tree = $this->getResourceTree($res);
-
-        /** @var GenericResource[] $clonedResources */
-        $clonedResources = [];
-
-        // Clone, rename, and set new destination...
-
-        foreach($tree as $originalResource){
-
-            if(!$originalResource instanceof GenericResource){
-                $resource = clone $originalResource;
-                $clonedResources[$originalResource->getTarget()] = $resource;
-                continue;
-            }
-
-            // Vérifier si c'est une image et si la déduplication est activée
-            if ($originalResource instanceof Image && $this->config->isEnabled('deduplicate_images')) {
-                $duplicate = $this->imageCache->findDuplicate($originalResource->getContent());
-                if ($duplicate !== null) {
-                    $clonedResources[$originalResource->getTarget()] = $duplicate;
-                    if ($this->config->isEnabled('collect_stats')) {
-                        $this->stats->recordDeduplication();
-                    }
-                    continue;
-                }
-            }
-
-            // Check if resource already exists in the document.
-            $existingResource = $this->getContentType()->lookForSimilarFile($originalResource);
-
-            if(null === $existingResource || $originalResource instanceof XmlResource) {
-                $resource = clone $originalResource;
-                $resource->setDocument($this);
-                $resource->rename(basename($this->getContentType()->findAvailableName($resource->getPatternPath())));
-                $this->contentType->addResource($resource);
-
-                // Configurer l'optimisation pour les images
-                if ($resource instanceof Image) {
-                    $resource->setOptimizationConfig($this->config);
-                    $this->imageCache->registerWithContent($resource->getContent(), $resource);
-                }
-
-                $clonedResources[$originalResource->getTarget()] = $resource;
-            } else {
-                $clonedResources[$originalResource->getTarget()] = $existingResource;
-            }
-        }
-
-        // After the resource is renamed, replace existing "rIds" by the corresponding new resource...
-
-        foreach($clonedResources as $resource){
-            if($resource instanceof XmlResource){
-                foreach($resource->resources as $rId => $subResource){
-                    $resource->resources[$rId] = $clonedResources[$subResource->getTarget()];
-                }
-            }
-
-            // Also, notify the Presentation that have a new interesting object...
-            $this->presentation->addResource($resource);
-
-            if($resource instanceof Slide){
-                $this->slides[] = $res;
-            }
-        }
-
-        // Finally, save all new resources.
-        foreach($clonedResources as $resource){
-            // Collecter les stats pour les images si activé
-            if ($resource instanceof Image && $this->config->isEnabled('collect_stats')) {
-                $originalSize = $resource->getOriginalSize();
-                $compressedSize = $resource->getCompressedSize();
-                if ($originalSize && $compressedSize && $originalSize !== $compressedSize) {
-                    $type = $resource->detectImageType($resource->getContent()) ?? 'unknown';
-                    $this->stats->recordCompression($originalSize, $compressedSize, $type);
-                }
-            }
-            
-            $resource->save();
-        }
-
-        // Ne pas sauvegarder ni rafraîchir ici (fait en batch)
+        $this->processResourceTree($res);
 
         return $this;
     }
@@ -446,14 +393,14 @@ class PPTX
      */
     public function getResourceTree(ResourceInterface $resource, array &$resourceList = []): array
     {
-        if(in_array($resource, $resourceList, true)){
+        if (in_array($resource, $resourceList, true)) {
             return $resourceList;
         }
 
         $resourceList[] = $resource;
 
         if ($resource instanceof XmlResource) {
-            foreach($resource->getResources() as $subResource){
+            foreach ($resource->getResources() as $subResource) {
                 $this->getResourceTree($subResource, $resourceList);
             }
         }
@@ -469,32 +416,40 @@ class PPTX
      * @throws FileOpenException
      * @throws FileSaveException
      */
-    public function template($data): PPTX
+    public function template(array|Closure $data): self
     {
         foreach ($this->getSlides() as $slide) {
             $slide->template($data);
         }
 
         $this->refreshSource();
+
         return $this;
     }
 
-    public function table(Closure $data, Closure $finder): PPTX
+    /**
+     * Fill table data in each slide.
+     *
+     * @param Closure $data
+     * @param Closure $finder
+     */
+    public function table(Closure $data, Closure $finder): self
     {
         foreach ($this->getSlides() as $slide) {
             $slide->table($data, $finder);
         }
 
         $this->refreshSource();
+
         return $this;
     }
 
     /**
      * Update the images in the slide.
      *
-     * @param mixed $data Closure or array which returns: key should match the descr attribute, value is the raw content of the image.
+     * @param array|Closure $data Closure or array which returns: key should match the descr attribute, value is the raw content of the image.
      */
-    public function images($data): PPTX
+    public function images(array|Closure $data): self
     {
         foreach ($this->getSlides() as $slide) {
             $slide->images($data);
@@ -504,14 +459,14 @@ class PPTX
     }
 
     /**
-     * Save.
+     * Save the presentation to a new file.
      *
-     * @param $target
+     * @param string $target Target file path
      *
      * @throws FileSaveException
      * @throws Exception
      */
-    public function saveAs($target): void
+    public function saveAs(string $target): void
     {
         $this->close();
 
@@ -533,6 +488,8 @@ class PPTX
     }
 
     /**
+     * Destructor - clean up temporary files.
+     *
      * @throws FileSaveException
      */
     public function __destruct()
@@ -542,6 +499,8 @@ class PPTX
     }
 
     /**
+     * Close the archive.
+     *
      * @throws FileSaveException
      */
     protected function close(): void
@@ -551,13 +510,16 @@ class PPTX
         }
     }
 
+    /**
+     * Get the underlying ZipArchive.
+     */
     public function getArchive(): ZipArchive
     {
         return $this->archive;
     }
 
     /**
-     * @return ContentType
+     * Get the content type manager.
      */
     public function getContentType(): ContentType
     {
@@ -565,9 +527,7 @@ class PPTX
     }
 
     /**
-     * Retourne la configuration d'optimisation
-     *
-     * @return OptimizationConfig
+     * Get the optimization configuration.
      */
     public function getConfig(): OptimizationConfig
     {
@@ -575,9 +535,7 @@ class PPTX
     }
 
     /**
-     * Retourne le cache d'images
-     *
-     * @return ImageCache
+     * Get the image cache.
      */
     public function getImageCache(): ImageCache
     {
@@ -585,7 +543,7 @@ class PPTX
     }
 
     /**
-     * Retourne les statistiques d'optimisation
+     * Get optimization statistics.
      *
      * @return array
      */
@@ -593,16 +551,14 @@ class PPTX
     {
         $stats = $this->stats->getReport();
         $cacheStats = $this->imageCache->getStats();
-        
+
         return array_merge($stats, [
             'cache_stats' => $cacheStats,
         ]);
     }
 
     /**
-     * Retourne un résumé des optimisations
-     *
-     * @return string
+     * Get a summary of optimizations performed.
      */
     public function getOptimizationSummary(): string
     {
@@ -610,9 +566,9 @@ class PPTX
     }
 
     /**
-     * Valide la présentation (slides et ressources)
+     * Validate the presentation (slides and resources).
      *
-     * @return array Rapport de validation
+     * @return array Validation report
      */
     public function validate(): array
     {
@@ -629,9 +585,9 @@ class PPTX
     }
 
     /**
-     * Valide uniquement les images
+     * Validate only images.
      *
-     * @return array Rapport de validation des images
+     * @return array Image validation report
      */
     public function validateImages(): array
     {
@@ -647,23 +603,15 @@ class PPTX
             foreach ($slide->getResources() as $resource) {
                 if ($resource instanceof Image) {
                     $report['total']++;
-                    try {
-                        $content = $resource->getContent();
-                        $imageReport = $imageValidator->validateWithReport($content);
-                        
-                        $report['details'][$resource->getTarget()] = $imageReport;
-                        
-                        if ($imageReport['valid']) {
-                            $report['valid']++;
-                        } else {
-                            $report['invalid']++;
-                        }
-                    } catch (\Exception $e) {
+                    $content = $resource->getContent();
+                    $imageReport = $imageValidator->validateWithReport($content);
+
+                    $report['details'][$resource->getTarget()] = $imageReport;
+
+                    if ($imageReport['valid']) {
+                        $report['valid']++;
+                    } else {
                         $report['invalid']++;
-                        $report['details'][$resource->getTarget()] = [
-                            'valid' => false,
-                            'errors' => [$e->getMessage()],
-                        ];
                     }
                 }
             }

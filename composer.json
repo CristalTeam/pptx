@@ -1,5 +1,6 @@
 {
     "name": "cristal/pptx",
+    "description": "PHP library for manipulating PowerPoint (PPTX) files",
     "authors": [
         {
             "name": "Cristal",
@@ -17,12 +18,31 @@
             "Cristal\\Presentation\\Tests\\": "tests"
         }
     },
-    "require-dev": {
-        "phpunit/phpunit": "^9.5"
-    },
     "require": {
-        "php": ">=7.1",
+        "php": ">=8.1",
         "ext-simplexml": "*",
         "ext-zip": "*"
+    },
+    "suggest": {
+        "ext-gd": "Required for image optimization features",
+        "ext-fileinfo": "Required for image validation features"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0",
+        "phpstan/phpstan": "^1.10",
+        "friendsofphp/php-cs-fixer": "^3.0"
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "analyse": "vendor/bin/phpstan analyse --level=6",
+        "format": "vendor/bin/php-cs-fixer fix",
+        "ci": [
+            "@format",
+            "@analyse",
+            "@test"
+        ]
+    },
+    "config": {
+        "sort-packages": true
     }
 }

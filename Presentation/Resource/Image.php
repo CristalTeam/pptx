@@ -1,30 +1,34 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation\Resource;
 
 use Cristal\Presentation\Config\OptimizationConfig;
+use finfo;
 
+/**
+ * Image resource class for handling images in a PPTX archive.
+ */
 class Image extends GenericResource
 {
     /**
-     * @var int|null Taille originale de l'image
+     * Original image size.
      */
-    private $originalSize;
+    private ?int $originalSize = null;
 
     /**
-     * @var int|null Taille compressée de l'image
+     * Compressed image size.
      */
-    private $compressedSize;
+    private ?int $compressedSize = null;
 
     /**
-     * @var OptimizationConfig|null
+     * Optimization configuration.
      */
-    private $config;
+    private ?OptimizationConfig $config = null;
 
     /**
-     * Définit la configuration d'optimisation
-     *
-     * @param OptimizationConfig $config
+     * Set the optimization configuration.
      */
     public function setOptimizationConfig(OptimizationConfig $config): void
     {
@@ -32,80 +36,79 @@ class Image extends GenericResource
     }
 
     /**
-     * Définit le contenu de l'image avec optimisation optionnelle
-     *
-     * @param string $content
+     * Set the image content with optional optimization.
      */
     public function setContent(string $content): void
     {
         $this->originalSize = strlen($content);
-        
-        // Appliquer les optimisations si configurées
+
+        // Apply optimizations if configured
         if ($this->config && $this->config->isEnabled('image_compression')) {
             $content = $this->optimizeImage($content);
         }
-        
+
         $this->compressedSize = strlen($content);
-        
+
         parent::setContent($content);
     }
 
     /**
-     * Optimise une image (compression + redimensionnement + conversion WebP optionnelle)
+     * Optimize an image (compression + resize + optional WebP conversion).
      *
-     * @param string $content Contenu de l'image
-     * @return string Contenu optimisé
+     * @param string $content Image content
+     * @return string Optimized content
      */
     private function optimizeImage(string $content): string
     {
         $imageType = $this->detectImageType($content);
-        
-        if (!$imageType) {
-            return $content; // Type non supporté, pas d'optimisation
+
+        if ($imageType === null) {
+            return $content; // Unsupported type, no optimization
         }
-        
+
         $image = @imagecreatefromstring($content);
-        
+
         if ($image === false) {
-            return $content; // Image corrompue, pas d'optimisation
+            return $content; // Corrupted image, no optimization
         }
-        
-        // Redimensionnement si nécessaire
+
+        // Resize if needed
         if ($this->config->isEnabled('image_compression')) {
             $image = $this->resizeIfNeeded($image);
         }
-        
-        // Conversion WebP si activée et supportée
+
+        // Convert to WebP if enabled and supported
         if ($this->config->isEnabled('convert_to_webp') && function_exists('imagewebp')) {
             ob_start();
             $quality = $this->config->get('image_quality');
             if (imagewebp($image, null, $quality)) {
                 $optimized = ob_get_clean();
                 imagedestroy($image);
+
                 return $optimized;
             }
             ob_end_clean();
         }
-        
-        // Sinon, compression selon le type
+
+        // Otherwise, compress according to type
         $optimized = $this->compressImage($image, $imageType);
-        
+
         imagedestroy($image);
-        
+
         return $optimized !== false ? $optimized : $content;
     }
 
     /**
-     * Détecte le type d'image à partir du contenu
+     * Detect image type from content.
      *
-     * @param string $content Contenu de l'image
-     * @return string|null Type d'image (jpeg, png, gif, etc.) ou null si non supporté
+     * @param string $content Image content
+     * @return string|null Image type (jpeg, png, gif, etc.) or null if unsupported
      */
     public function detectImageType(string $content): ?string
     {
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
         $mimeType = $finfo->buffer($content);
-        
+
         $typeMap = [
             'image/jpeg' => 'jpeg',
             'image/jpg' => 'jpeg',
@@ -113,80 +116,86 @@ class Image extends GenericResource
             'image/gif' => 'gif',
             'image/webp' => 'webp',
         ];
-        
+
         return $typeMap[$mimeType] ?? null;
     }
 
     /**
-     * Redimensionne l'image si elle dépasse les dimensions max
+     * Resize image if it exceeds max dimensions.
      *
-     * @param resource $image Image GD
-     * @return resource Image redimensionnée ou originale
+     * @param \GdImage $image GD image resource
+     * @return \GdImage Resized or original image
      */
-    private function resizeIfNeeded($image)
+    private function resizeIfNeeded(\GdImage $image): \GdImage
     {
         $width = imagesx($image);
         $height = imagesy($image);
-        
+
         $maxWidth = $this->config->get('max_image_width');
         $maxHeight = $this->config->get('max_image_height');
-        
+
         if ($width <= $maxWidth && $height <= $maxHeight) {
-            return $image; // Pas besoin de redimensionner
+            return $image; // No resize needed
         }
-        
-        // Calculer les nouvelles dimensions en préservant le ratio
+
+        // Calculate new dimensions preserving aspect ratio
         $ratio = min($maxWidth / $width, $maxHeight / $height);
         $newWidth = (int) ($width * $ratio);
         $newHeight = (int) ($height * $ratio);
-        
+
         $resized = imagecreatetruecolor($newWidth, $newHeight);
-        
-        // Préserver la transparence pour PNG et GIF
+
+        // Preserve transparency for PNG and GIF
         imagealphablending($resized, false);
         imagesavealpha($resized, true);
-        
+
         imagecopyresampled(
-            $resized, $image,
-            0, 0, 0, 0,
-            $newWidth, $newHeight,
-            $width, $height
+            $resized,
+            $image,
+            0,
+            0,
+            0,
+            0,
+            $newWidth,
+            $newHeight,
+            $width,
+            $height
         );
-        
+
         imagedestroy($image);
-        
+
         return $resized;
     }
 
     /**
-     * Compresse une image selon son type
+     * Compress an image according to its type.
      *
-     * @param resource $image Image GD
-     * @param string $type Type d'image (jpeg, png, etc.)
-     * @return string|false Contenu compressé ou false en cas d'erreur
+     * @param \GdImage $image GD image resource
+     * @param string $type Image type (jpeg, png, etc.)
+     * @return false|string Compressed content or false on error
      */
-    private function compressImage($image, string $type)
+    private function compressImage(\GdImage $image, string $type): string|false
     {
         ob_start();
-        
+
         $result = false;
-        
+
         switch ($type) {
             case 'jpeg':
                 $quality = $this->config->get('image_quality');
                 $result = imagejpeg($image, null, $quality);
                 break;
-                
+
             case 'png':
-                // PNG: niveau de compression 0-9 (9 = max compression)
+                // PNG: compression level 0-9 (9 = max compression)
                 $level = (int) (9 - ($this->config->get('image_quality') / 100 * 9));
                 $result = imagepng($image, null, $level);
                 break;
-                
+
             case 'gif':
-                $result = imagegif($image, null);
+                $result = imagegif($image);
                 break;
-                
+
             case 'webp':
                 if (function_exists('imagewebp')) {
                     $quality = $this->config->get('image_quality');
@@ -194,124 +203,122 @@ class Image extends GenericResource
                 }
                 break;
         }
-        
+
         $content = ob_get_clean();
-        
+
         return $result ? $content : false;
     }
 
     /**
-     * Convertit une image en WebP
+     * Convert an image to WebP format.
      *
-     * @param string $content Contenu de l'image
-     * @param int $quality Qualité (1-100)
-     * @return string|false Contenu WebP ou false si erreur
+     * @param string $content Image content
+     * @param int $quality Quality (1-100)
+     * @return false|string WebP content or false on error
      */
-    public function convertToWebP(string $content, int $quality = 85)
+    public function convertToWebP(string $content, int $quality = 85): string|false
     {
         if (!function_exists('imagewebp')) {
             return false;
         }
 
         $image = @imagecreatefromstring($content);
-        
+
         if ($image === false) {
             return false;
         }
-        
-        // Préserver la transparence
+
+        // Preserve transparency
         imagealphablending($image, false);
         imagesavealpha($image, true);
-        
+
         ob_start();
         $result = imagewebp($image, null, $quality);
         $webp = ob_get_clean();
-        
+
         imagedestroy($image);
-        
+
         return $result ? $webp : false;
     }
 
     /**
-     * Compresse un JPEG
+     * Compress a JPEG image.
      *
-     * @param string $content Contenu JPEG
-     * @param int $quality Qualité (1-100)
-     * @return string Contenu compressé
+     * @param string $content JPEG content
+     * @param int $quality Quality (1-100)
+     * @return string Compressed content
      */
     public function compressJpeg(string $content, int $quality): string
     {
         $image = @imagecreatefromstring($content);
-        
+
         if ($image === false) {
             return $content;
         }
-        
+
         ob_start();
         imagejpeg($image, null, $quality);
         $compressed = ob_get_clean();
-        
+
         imagedestroy($image);
-        
+
         return $compressed !== false ? $compressed : $content;
     }
 
     /**
-     * Compresse un PNG
+     * Compress a PNG image.
      *
-     * @param string $content Contenu PNG
-     * @param int $level Niveau de compression (0-9)
-     * @return string Contenu compressé
+     * @param string $content PNG content
+     * @param int $level Compression level (0-9)
+     * @return string Compressed content
      */
     public function compressPng(string $content, int $level): string
     {
         $image = @imagecreatefromstring($content);
-        
+
         if ($image === false) {
             return $content;
         }
-        
-        // Préserver la transparence
+
+        // Preserve transparency
         imagealphablending($image, false);
         imagesavealpha($image, true);
-        
+
         ob_start();
         imagepng($image, null, $level);
         $compressed = ob_get_clean();
-        
+
         imagedestroy($image);
-        
+
         return $compressed !== false ? $compressed : $content;
     }
 
     /**
-     * Obtient les dimensions d'une image
+     * Get image dimensions.
      *
-     * @param string $content Contenu de l'image
-     * @return array|null ['width' => int, 'height' => int] ou null si erreur
+     * @param string $content Image content
+     * @return array{width: int, height: int}|null Dimensions or null on error
      */
     public function getDimensions(string $content): ?array
     {
         $image = @imagecreatefromstring($content);
-        
+
         if ($image === false) {
             return null;
         }
-        
+
         $dimensions = [
             'width' => imagesx($image),
             'height' => imagesy($image),
         ];
-        
+
         imagedestroy($image);
-        
+
         return $dimensions;
     }
 
     /**
-     * Retourne la taille originale de l'image
-     *
-     * @return int|null
+     * Get the original image size.
      */
     public function getOriginalSize(): ?int
     {
@@ -319,9 +326,7 @@ class Image extends GenericResource
     }
 
     /**
-     * Retourne la taille compressée de l'image
-     *
-     * @return int|null
+     * Get the compressed image size.
      */
     public function getCompressedSize(): ?int
     {
@@ -329,16 +334,14 @@ class Image extends GenericResource
     }
 
     /**
-     * Retourne le ratio de compression
-     *
-     * @return float|null
+     * Get the compression ratio.
      */
     public function getCompressionRatio(): ?float
     {
         if ($this->originalSize === null || $this->compressedSize === null || $this->originalSize === 0) {
             return null;
         }
-        
+
         return $this->compressedSize / $this->originalSize;
     }
 }

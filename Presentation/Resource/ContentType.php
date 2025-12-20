@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation\Resource;
 
 use Cristal\Presentation\Cache\LRUCache;
@@ -7,10 +9,13 @@ use Cristal\Presentation\PPTX;
 use Cristal\Presentation\ResourceInterface;
 use SimpleXMLElement;
 
+/**
+ * Content type manager for handling PPTX file types.
+ */
 class ContentType extends GenericResource
 {
     /**
-     * Classes mapping.
+     * Classes mapping for content types.
      */
     public const CLASSES = [
         // Generic formats that are defined multiple times must be defined at the top of the list.
@@ -28,9 +33,15 @@ class ContentType extends GenericResource
         'application/vnd.openxmlformats-officedocument.presentationml.viewProps+xml' => XmlResource::class,
         'application/vnd.openxmlformats-officedocument.presentationml.presProps+xml' => XmlResource::class,
         'application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml' => NoteSlide::class,
+        // Comments support (ECMA-376 Part 1, Section 13.3.2)
+        'application/vnd.openxmlformats-officedocument.presentationml.comments+xml' => Comment::class,
+        'application/vnd.openxmlformats-officedocument.presentationml.commentAuthors+xml' => CommentAuthor::class,
+        // Themes
         'application/vnd.openxmlformats-officedocument.theme+xml' => Theme::class,
-        'application/vnd.openxmlformats-package.core-properties+xml' => XmlResource::class,
+        // Core Properties (Dublin Core metadata)
+        'application/vnd.openxmlformats-package.core-properties+xml' => CoreProperties::class,
         'application/vnd.openxmlformats-officedocument.extended-properties+xml' => XmlResource::class,
+        // Images
         'image/png' => Image::class,
         'image/jpeg' => Image::class,
         'image/vnd.ms-photo' => Image::class,
@@ -38,68 +49,76 @@ class ContentType extends GenericResource
     ];
 
     /**
-     * @var SimpleXMLElement
+     * The parsed XML content.
      */
-    public $content;
+    protected SimpleXMLElement $content;
 
     /**
-     * @var LRUCache Cache LRU pour les ressources
+     * LRU cache for resources.
      */
-    protected $cachedResources;
+    protected LRUCache|array $cachedResources;
 
     /**
-     * @var bool Utiliser le cache LRU
+     * Use LRU cache flag.
      */
-    protected $useLRUCache = false;
+    protected bool $useLRUCache = false;
 
     /**
-     * @var array|string[]
+     * Override content types.
+     *
+     * @var array<string, string>
      */
-    protected $overrides;
+    protected array $overrides = [];
 
     /**
-     * @var array|string[]
+     * Extension content types.
+     *
+     * @var array<string, string>
      */
-    protected $extensions;
+    protected array $extensions = [];
 
     /**
-     * @var array
+     * Cached filename list.
+     *
+     * @var array<int, string>
      */
-    protected $cachedFilename = [];
+    protected array $cachedFilename = [];
 
+    /**
+     * ContentType constructor.
+     */
     public function __construct(PPTX $document)
     {
         parent::__construct('[Content_Types].xml', '', 'application/xml', $document);
 
         $this->setContent($this->initialDocument->getArchive()->getFromName($this->getInitialTarget()));
 
-        // Initialiser le cache LRU si configuré
-        $config = $document->getConfig();
-        if ($config && $config->get('cache_size')) {
+        // Initialize LRU cache if configured
+        $cacheSize = $document->getConfig()->get('cache_size');
+        if ($cacheSize > 0) {
             $this->useLRUCache = true;
-            $this->cachedResources = new LRUCache($config->get('cache_size'));
+            $this->cachedResources = new LRUCache($cacheSize);
         } else {
             $this->cachedResources = [];
         }
 
         // Get override mimes.
-
         foreach ($this->content->Override as $resourceNode) {
-            $this->overrides[trim((string)$resourceNode['PartName'], '/')] = (string)$resourceNode['ContentType'];
+            $this->overrides[trim((string) $resourceNode['PartName'], '/')] = (string) $resourceNode['ContentType'];
         }
 
         // Get generic extensions.
-
         foreach ($this->content->Default as $resourceNode) {
-            $this->extensions[(string)$resourceNode['Extension']] = (string)$resourceNode['ContentType'];
+            $this->extensions[(string) $resourceNode['Extension']] = (string) $resourceNode['ContentType'];
         }
 
         // Store filename list.
-
         for ($i = 0; $i < $this->getDocument()->getArchive()->numFiles; ++$i) {
-            $filenameParts = pathinfo($this->getDocument()->getArchive()->statIndex($i)['name']);
-            if (isset($filenameParts['dirname'], $filenameParts['basename'])) {
-                $this->cachedFilename[] = $filenameParts['dirname'] . '/' . $filenameParts['basename'];
+            $stat = $this->getDocument()->getArchive()->statIndex($i);
+            if ($stat !== false) {
+                $filenameParts = pathinfo($stat['name']);
+                $dirname = $filenameParts['dirname'] ?? '.';
+                $this->cachedFilename[] = $dirname . '/' . $filenameParts['basename'];
             }
         }
     }
@@ -123,18 +142,29 @@ class ContentType extends GenericResource
     }
 
     /**
-     * Get resource class from its contentType.
+     * Get resource class from its content type.
+     *
+     * @param string $contentType Content type string
+     * @return string Class name
      */
     public static function getResourceClassFromType(string $contentType): string
     {
         return static::CLASSES[$contentType] ?? static::CLASSES['_'];
     }
 
-    public function getResource(string $path, string $relType = '', $external = false, bool $storeInCache = true): ResourceInterface
+    /**
+     * Get a resource by path.
+     *
+     * @param string $path Resource path
+     * @param string $relType Relationship type
+     * @param bool $external Whether the resource is external
+     * @param bool $storeInCache Whether to store in cache
+     */
+    public function getResource(string $path, string $relType = '', bool $external = false, bool $storeInCache = true): ResourceInterface
     {
         $path = !$external ? static::resolveAbsolutePath($path) : $path;
 
-        // Vérifier dans le cache
+        // Check cache
         if ($this->useLRUCache) {
             $cached = $this->cachedResources->get($path);
             if ($cached !== null) {
@@ -146,18 +176,18 @@ class ContentType extends GenericResource
             }
         }
 
-        if($external) {
+        if ($external) {
             $resource = new External($path, $relType);
         } else {
+            $extension = pathinfo($path, PATHINFO_EXTENSION);
             $contentType =
                 $this->overrides[$path]
-                ?? $this->extensions[pathinfo($path, PATHINFO_EXTENSION) ?? null]
-                ?? '';
+                ?? ($extension !== '' ? ($this->extensions[$extension] ?? '') : '');
 
             $className = static::getResourceClassFromType($contentType);
             $resource = new $className($path, $relType, $contentType, $this->document);
-            
-            // Activer lazy loading si configuré
+
+            // Enable lazy loading if configured
             if ($this->document->getConfig()->isEnabled('lazy_loading')) {
                 $resource->setLazyLoading(true);
             }
@@ -174,13 +204,20 @@ class ContentType extends GenericResource
         return $resource;
     }
 
-    public function lookForSimilarFile(GenericResource $originalResource)
+    /**
+     * Look for a similar file in the archive.
+     *
+     * @param GenericResource $originalResource Resource to compare
+     * @return GenericResource|null Existing resource if found
+     */
+    public function lookForSimilarFile(GenericResource $originalResource): ?GenericResource
     {
         $startBy = dirname($originalResource->getTarget()) . '/';
         foreach ($this->cachedFilename as $path) {
-            if (0 === strpos($path, $startBy) && dirname($path) . '/' === $startBy) {
+            if (str_starts_with($path, $startBy) && dirname($path) . '/' === $startBy) {
                 $existingFile = $this->getResource($path, $originalResource->getRelType(), false, false);
-                if ($existingFile->getHashFile() === $originalResource->getHashFile()) {
+                if ($existingFile instanceof GenericResource
+                    && $existingFile->getHashFile() === $originalResource->getHashFile()) {
                     return $existingFile;
                 }
             }
@@ -192,20 +229,20 @@ class ContentType extends GenericResource
     /**
      * Find an available filename based on a pattern.
      *
-     * @param mixed $pattern A string contains '{x}' as an index replaced by a incremental number
-     * @param int $start beginning index default is 1
-     *
-     * @return mixed
+     * @param string|null $pattern A string containing '{x}' as an index replaced by an incremental number
+     * @param int $start Beginning index (default is 1)
+     * @return string Available filename
      */
-    public function findAvailableName($pattern, $start = 1)
+    public function findAvailableName(?string $pattern, int $start = 1): string
     {
-        $filenameList = array_map(static function ($path) {
+        $filenameList = array_map(static function (string $path): string {
             $pathInfo = pathinfo($path);
+
             return $pathInfo['dirname'] . '/' . $pathInfo['filename'];
         }, $this->cachedFilename);
 
         do {
-            $filename = str_replace('{x}', $start, $pattern);
+            $filename = str_replace('{x}', (string) $start, $pattern ?? '');
             $filenameParts = pathinfo($filename);
 
             $filenameWithoutExtension = $filenameParts['dirname'] . '/' . $filenameParts['filename'];
@@ -221,13 +258,16 @@ class ContentType extends GenericResource
         return $filename;
     }
 
+    /**
+     * Check if the resource is a draft.
+     */
     public function isDraft(): bool
     {
         return true;
     }
 
     /**
-     * Add content type to the presentation from a filename.
+     * Add content type to the presentation from a resource.
      */
     public function addResource(GenericResource $resource): void
     {
@@ -237,8 +277,7 @@ class ContentType extends GenericResource
         $realContentType = $resource->getContentType();
 
         // Append unknown format.
-
-        if(null === $fileContentType){
+        if ($fileContentType === null) {
             $fileContentType = $this->extensions[$fileExtension] = $realContentType;
 
             $child = $this->content->addChild('Default');
@@ -246,8 +285,7 @@ class ContentType extends GenericResource
             $child->addAttribute('ContentType', $fileContentType);
         }
 
-        // If the contentType does not exist on generics extensions, then add a specific "Override" child.
-
+        // If the contentType does not exist on generic extensions, then add a specific "Override" child.
         if ($fileContentType !== $realContentType) {
             $child = $this->content->addChild('Override');
             $child->addAttribute('PartName', '/' . $resource->getTarget());
@@ -262,9 +300,9 @@ class ContentType extends GenericResource
     }
 
     /**
-     * Retourne les statistiques du cache
+     * Get cache statistics.
      *
-     * @return array|null
+     * @return array<string, mixed>|null
      */
     public function getCacheStats(): ?array
     {

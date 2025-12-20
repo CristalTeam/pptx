@@ -1,65 +1,48 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation\Resource;
 
 use Cristal\Presentation\Exception\InvalidFileNameException;
 use Cristal\Presentation\PPTX;
 use Cristal\Presentation\ResourceInterface;
-use Exception;
 
+/**
+ * Generic resource class for handling files in a PPTX archive.
+ */
 class GenericResource implements ResourceInterface
 {
-    /**
-     * @var string
-     */
-    protected $initialTarget;
+    protected string $initialTarget;
+
+    protected string $target;
+
+    protected string $relType;
+
+    protected string $contentType;
+
+    protected PPTX $document;
+
+    protected PPTX $initialDocument;
+
+    protected ?string $customContent = null;
+
+    protected bool $hasChange = false;
 
     /**
-     * @var string
+     * Indicates if the content has been loaded.
      */
-    protected $target;
+    protected bool $contentLoaded = false;
 
     /**
-     * @var string
+     * Content in lazy loading mode.
      */
-    protected $relType;
+    protected ?string $lazyContent = null;
 
     /**
-     * @var string
+     * Enable lazy loading.
      */
-    protected $contentType;
-
-    /**
-     * @var PPTX
-     */
-    protected $document;
-
-    /**
-     * @var PPTX
-     */
-    protected $initialDocument;
-
-    /**
-     * @var null|string
-     */
-    protected $customContent;
-
-    protected $hasChange = false;
-
-    /**
-     * @var bool Indique si le contenu a été chargé
-     */
-    protected $contentLoaded = false;
-
-    /**
-     * @var string|null Contenu en lazy loading
-     */
-    protected $lazyContent = null;
-
-    /**
-     * @var bool Active le lazy loading
-     */
-    protected $lazyLoadingEnabled = false;
+    protected bool $lazyLoadingEnabled = false;
 
     /**
      * Resource constructor.
@@ -77,7 +60,7 @@ class GenericResource implements ResourceInterface
      */
     public function getContent(): string
     {
-        // Si lazy loading activé et contenu pas encore chargé
+        // If lazy loading enabled and content not yet loaded
         if ($this->lazyLoadingEnabled && !$this->contentLoaded) {
             $this->lazyContent = $this->loadContent();
             $this->contentLoaded = true;
@@ -87,15 +70,16 @@ class GenericResource implements ResourceInterface
     }
 
     /**
-     * Charge le contenu depuis l'archive
-     *
-     * @return string
+     * Load content from the archive.
      */
     protected function loadContent(): string
     {
         return $this->initialDocument->getArchive()->getFromName($this->getInitialTarget());
     }
 
+    /**
+     * Set the content of this resource.
+     */
     public function setContent(string $content): void
     {
         $this->hasChange = true;
@@ -106,9 +90,7 @@ class GenericResource implements ResourceInterface
     }
 
     /**
-     * Active le lazy loading pour cette ressource
-     *
-     * @param bool $enabled
+     * Enable lazy loading for this resource.
      */
     public function setLazyLoading(bool $enabled): void
     {
@@ -116,9 +98,7 @@ class GenericResource implements ResourceInterface
     }
 
     /**
-     * Vérifie si le lazy loading est activé
-     *
-     * @return bool
+     * Check if lazy loading is enabled.
      */
     public function isLazyLoadingEnabled(): bool
     {
@@ -126,8 +106,8 @@ class GenericResource implements ResourceInterface
     }
 
     /**
-     * Décharge le contenu de la mémoire
-     * Utile pour libérer de la mémoire sur les grandes ressources
+     * Unload content from memory.
+     * Useful for freeing memory on large resources.
      */
     public function unloadContent(): void
     {
@@ -138,9 +118,7 @@ class GenericResource implements ResourceInterface
     }
 
     /**
-     * Vérifie si le contenu est actuellement chargé en mémoire
-     *
-     * @return bool
+     * Check if content is currently loaded in memory.
      */
     public function isContentLoaded(): bool
     {
@@ -152,7 +130,7 @@ class GenericResource implements ResourceInterface
      */
     public static function resolveAbsolutePath(string $path): string
     {
-        $parts = array_filter(explode('/', $path), 'strlen');
+        $parts = array_filter(explode('/', $path), static fn (string $part): bool => $part !== '');
         $absolutes = [];
         foreach ($parts as $part) {
             if ('.' === $part) {
@@ -164,16 +142,15 @@ class GenericResource implements ResourceInterface
                 $absolutes[] = $part;
             }
         }
+
         return implode('/', $absolutes);
     }
 
     /**
      * Get pattern from filename.
-     * Example, it returns 'ppt/slides/slide{x}.xml' for a filename like this ppt/slides/slide1.xml
-     *
-     * @return null|string|string[]
+     * Example: returns 'ppt/slides/slide{x}.xml' for a filename like ppt/slides/slide1.xml
      */
-    public function getPatternPath()
+    public function getPatternPath(): ?string
     {
         return preg_replace('#([^/])\d+?\.(.*?)$#', '$1{x}.$2', $this->getTarget());
     }
@@ -186,6 +163,9 @@ class GenericResource implements ResourceInterface
         return $this->initialTarget;
     }
 
+    /**
+     * Get current target file path.
+     */
     public function getTarget(): string
     {
         return $this->target;
@@ -193,12 +173,13 @@ class GenericResource implements ResourceInterface
 
     /**
      * Rename current Resource.
-     * @throws Exception
+     *
+     * @throws InvalidFileNameException
      */
     public function rename(string $filename): self
     {
         if (preg_match('#/#', $filename)) {
-            throw new InvalidFileNameException('Filename can not be a a path.');
+            throw new InvalidFileNameException('Filename can not be a path.');
         }
 
         $this->target = dirname($this->target) . '/' . $filename;
@@ -206,23 +187,32 @@ class GenericResource implements ResourceInterface
         return $this;
     }
 
+    /**
+     * Get the relationship type.
+     */
     public function getRelType(): string
     {
         return $this->relType;
     }
 
+    /**
+     * Get the content type.
+     */
     public function getContentType(): string
     {
         return $this->contentType;
     }
 
+    /**
+     * Get the document this resource belongs to.
+     */
     public function getDocument(): PPTX
     {
         return $this->document;
     }
 
     /**
-     * Set a new zip archive for work.
+     * Set a new document for this resource.
      */
     public function setDocument(PPTX $document): PPTX
     {
@@ -230,7 +220,7 @@ class GenericResource implements ResourceInterface
     }
 
     /**
-     * Check if the current file has been moved.
+     * Check if the current file has been moved or modified.
      */
     public function isDraft(): bool
     {
@@ -247,7 +237,7 @@ class GenericResource implements ResourceInterface
     }
 
     /**
-     *  Save current Resource.
+     * Perform the actual save operation.
      */
     protected function performSave(): void
     {
@@ -256,7 +246,7 @@ class GenericResource implements ResourceInterface
     }
 
     /**
-     * Save current Resource and syncInitials.
+     * Save current Resource and sync initials.
      */
     public function save(): void
     {
@@ -266,6 +256,9 @@ class GenericResource implements ResourceInterface
         }
     }
 
+    /**
+     * Get the hash of the file content.
+     */
     public function getHashFile(): string
     {
         return md5($this->getContent());
@@ -273,6 +266,7 @@ class GenericResource implements ResourceInterface
 
     /**
      * Returns the target path as relative reference from the base path.
+     *
      * @see https://github.com/symfony/routing/blob/7da33371d8ecfed6c9d93d87c73749661606f803/Generator/UrlGenerator.php#L336
      */
     public function getRelativeTarget(string $relPath): string
@@ -283,10 +277,14 @@ class GenericResource implements ResourceInterface
             return '';
         }
 
-        $sourceDirs = explode('/',
-            isset($basePath[0]) && strpos($basePath, '/') === 0 ? substr($basePath, 1) : $basePath);
-        $targetDirs = explode('/',
-            isset($targetPath[0]) && strpos($targetPath, '/') === 0 ? substr($targetPath, 1) : $targetPath);
+        $sourceDirs = explode(
+            '/',
+            isset($basePath[0]) && strpos($basePath, '/') === 0 ? substr($basePath, 1) : $basePath
+        );
+        $targetDirs = explode(
+            '/',
+            isset($targetPath[0]) && strpos($targetPath, '/') === 0 ? substr($targetPath, 1) : $targetPath
+        );
         array_pop($sourceDirs);
         $targetFile = array_pop($targetDirs);
 
@@ -305,11 +303,16 @@ class GenericResource implements ResourceInterface
         // This also applies to a segment with a colon character (e.g., "file:colon") that cannot be used
         // as the first segment of a relative-path reference, as it would be mistaken for a scheme name
         // (see http://tools.ietf.org/html/rfc3986#section-4.2).
-        return '' === $path
-        || strpos($path, '/') === 0
-        || (
-            false !== ($colonPos = strpos($path, ':')) &&
-            ($colonPos < ($slashPos = strpos($path, '/')) || false === $slashPos)
-        ) ? './' . $path : $path;
+        if ($path === '' || str_starts_with($path, '/')) {
+            return './' . $path;
+        }
+
+        $colonPos = strpos($path, ':');
+        $slashPos = strpos($path, '/');
+        if ($colonPos !== false && ($slashPos === false || $colonPos < $slashPos)) {
+            return './' . $path;
+        }
+
+        return $path;
     }
 }

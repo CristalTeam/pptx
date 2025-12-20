@@ -1,0 +1,18 @@
+parameters:
+    level: 6
+    paths:
+        - Presentation
+    excludePaths:
+        - tests
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        - identifier: missingType.iterableValue
+        -
+            message: '#SimpleXMLElement does not accept string#'
+            path: Presentation/Resource/XmlResource.php
+        -
+            message: '#Result of \|\| is always false#'
+            path: Presentation/Validator/ImageValidator.php
+        -
+            message: '#Strict comparison using === between int<1, max> and 0#'
+            path: Presentation/Validator/ImageValidator.php

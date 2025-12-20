@@ -1,63 +1,74 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation\Stats;
 
+use Cristal\Presentation\Utils\ByteFormatter;
+
+/**
+ * Statistics collector for image optimizations.
+ */
 class OptimizationStats
 {
-    /**
-     * @var int Taille originale totale
-     */
-    private $originalSize = 0;
+    use ByteFormatter;
 
     /**
-     * @var int Taille compressée totale
+     * Total original size.
      */
-    private $compressedSize = 0;
+    private int $originalSize = 0;
 
     /**
-     * @var int Nombre d'images compressées
+     * Total compressed size.
      */
-    private $imagesCompressed = 0;
+    private int $compressedSize = 0;
 
     /**
-     * @var int Nombre d'images redimensionnées
+     * Number of compressed images.
      */
-    private $imagesResized = 0;
+    private int $imagesCompressed = 0;
 
     /**
-     * @var int Nombre d'images dédupliquées
+     * Number of resized images.
      */
-    private $imagesDeduplicated = 0;
+    private int $imagesResized = 0;
 
     /**
-     * @var array Détails des compressions
+     * Number of deduplicated images.
      */
-    private $compressionDetails = [];
+    private int $imagesDeduplicated = 0;
 
     /**
-     * Enregistre une compression d'image
+     * Compression details.
      *
-     * @param int $before Taille avant compression
-     * @param int $after Taille après compression
-     * @param string $type Type d'image (jpeg, png, etc.)
+     * @var array<int, array{type: string, before: int, after: int, saved: int, ratio: float}>
+     */
+    private array $compressionDetails = [];
+
+    /**
+     * Record an image compression.
+     *
+     * @param int $before Size before compression
+     * @param int $after Size after compression
+     * @param string $type Image type (jpeg, png, etc.)
      */
     public function recordCompression(int $before, int $after, string $type = 'unknown'): void
     {
         $this->originalSize += $before;
         $this->compressedSize += $after;
         $this->imagesCompressed++;
-        
+
         $this->compressionDetails[] = [
             'type' => $type,
             'before' => $before,
             'after' => $after,
             'saved' => $before - $after,
-            'ratio' => $after / $before,
+            'ratio' => $before > 0 ? $after / $before : 1.0,
         ];
     }
 
     /**
-     * Enregistre un redimensionnement d'image
+     * Record an image resize.
      */
     public function recordResize(): void
     {
@@ -65,7 +76,7 @@ class OptimizationStats
     }
 
     /**
-     * Enregistre une déduplication d'image
+     * Record an image deduplication.
      */
     public function recordDeduplication(): void
     {
@@ -73,23 +84,19 @@ class OptimizationStats
     }
 
     /**
-     * Calcule le ratio de compression global
-     *
-     * @return float
+     * Calculate the global compression ratio.
      */
     public function getCompressionRatio(): float
     {
         if ($this->originalSize === 0) {
             return 1.0;
         }
-        
+
         return $this->compressedSize / $this->originalSize;
     }
 
     /**
-     * Calcule les octets économisés
-     *
-     * @return int
+     * Calculate bytes saved.
      */
     public function getBytesSaved(): int
     {
@@ -97,23 +104,31 @@ class OptimizationStats
     }
 
     /**
-     * Calcule le pourcentage d'économie
-     *
-     * @return float
+     * Calculate savings percentage.
      */
     public function getSavingsPercent(): float
     {
         if ($this->originalSize === 0) {
             return 0.0;
         }
-        
+
         return (1 - $this->getCompressionRatio()) * 100;
     }
 
     /**
-     * Retourne un rapport complet
+     * Get a complete report.
      *
-     * @return array
+     * @return array{
+     *     original_size: int,
+     *     optimized_size: int,
+     *     bytes_saved: int,
+     *     compression_ratio: float,
+     *     savings_percent: float,
+     *     images_compressed: int,
+     *     images_resized: int,
+     *     images_deduplicated: int,
+     *     total_optimizations: int
+     * }
      */
     public function getReport(): array
     {
@@ -131,9 +146,9 @@ class OptimizationStats
     }
 
     /**
-     * Retourne les détails des compressions
+     * Get compression details.
      *
-     * @return array
+     * @return array<int, array{type: string, before: int, after: int, saved: int, ratio: float}>
      */
     public function getCompressionDetails(): array
     {
@@ -141,7 +156,7 @@ class OptimizationStats
     }
 
     /**
-     * Réinitialise toutes les statistiques
+     * Reset all statistics.
      */
     public function reset(): void
     {
@@ -154,40 +169,18 @@ class OptimizationStats
     }
 
     /**
-     * Retourne un résumé formaté
-     *
-     * @return string
+     * Get a formatted summary.
      */
     public function getSummary(): string
     {
         $report = $this->getReport();
-        
+
         return sprintf(
-            "Optimisation: %d images traitées, %.2f%% économisés (%s -> %s)",
+            'Optimization: %d images processed, %.2f%% saved (%s -> %s)',
             $report['total_optimizations'],
             $report['savings_percent'],
             $this->formatBytes($report['original_size']),
             $this->formatBytes($report['optimized_size'])
         );
-    }
-
-    /**
-     * Formate une taille en octets de manière lisible
-     *
-     * @param int $bytes
-     * @return string
-     */
-    private function formatBytes(int $bytes): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $index = 0;
-        $size = $bytes;
-        
-        while ($size >= 1024 && $index < count($units) - 1) {
-            $size /= 1024;
-            $index++;
-        }
-        
-        return round($size, 2) . ' ' . $units[$index];
     }
 }

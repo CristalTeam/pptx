@@ -1,48 +1,57 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation\Cache;
 
+/**
+ * Least Recently Used (LRU) cache implementation.
+ */
 class LRUCache
 {
     /**
-     * @var int Taille maximale du cache
+     * Maximum cache size.
      */
-    private $maxSize;
+    private int $maxSize;
 
     /**
-     * @var array Cache des éléments [clé => valeur]
+     * Cache storage [key => value].
+     *
+     * @var array<string, mixed>
      */
-    private $cache = [];
+    private array $cache = [];
 
     /**
-     * @var array Ordre d'accès [clé => timestamp]
+     * Access order tracking [key => timestamp].
+     *
+     * @var array<string, int>
      */
-    private $order = [];
+    private array $order = [];
 
     /**
-     * @var int Compteur pour l'ordre d'accès
+     * Counter for access ordering.
      */
-    private $counter = 0;
+    private int $counter = 0;
 
     /**
-     * @var int Nombre d'évictions effectuées
+     * Number of evictions performed.
      */
-    private $evictions = 0;
+    private int $evictions = 0;
 
     /**
-     * @var int Nombre de hits
+     * Number of cache hits.
      */
-    private $hits = 0;
+    private int $hits = 0;
 
     /**
-     * @var int Nombre de miss
+     * Number of cache misses.
      */
-    private $misses = 0;
+    private int $misses = 0;
 
     /**
      * LRUCache constructor.
      *
-     * @param int $maxSize Taille maximale du cache
+     * @param int $maxSize Maximum cache size
      */
     public function __construct(int $maxSize = 100)
     {
@@ -50,19 +59,20 @@ class LRUCache
     }
 
     /**
-     * Récupère une valeur du cache
+     * Get a value from the cache.
      *
-     * @param string $key Clé à récupérer
-     * @return mixed|null Valeur ou null si non trouvée
+     * @param string $key Key to retrieve
+     * @return mixed|null Value or null if not found
      */
-    public function get(string $key)
+    public function get(string $key): mixed
     {
         if (!isset($this->cache[$key])) {
             $this->misses++;
+
             return null;
         }
 
-        // Mettre à jour l'ordre d'accès (marquer comme récemment utilisé)
+        // Update access order (mark as recently used)
         $this->order[$key] = ++$this->counter;
         $this->hits++;
 
@@ -70,32 +80,33 @@ class LRUCache
     }
 
     /**
-     * Ajoute ou met à jour une valeur dans le cache
+     * Add or update a value in the cache.
      *
-     * @param string $key Clé
-     * @param mixed $value Valeur
+     * @param string $key Key
+     * @param mixed $value Value
      */
-    public function set(string $key, $value): void
+    public function set(string $key, mixed $value): void
     {
-        // Si la clé existe déjà, mettre à jour
+        // If key already exists, update it
         if (isset($this->cache[$key])) {
             $this->cache[$key] = $value;
             $this->order[$key] = ++$this->counter;
+
             return;
         }
 
-        // Si le cache est plein, évincer le plus ancien
+        // If cache is full, evict the oldest
         if (count($this->cache) >= $this->maxSize) {
             $this->evict();
         }
 
-        // Ajouter le nouvel élément
+        // Add new element
         $this->cache[$key] = $value;
         $this->order[$key] = ++$this->counter;
     }
 
     /**
-     * Évince l'élément le moins récemment utilisé
+     * Evict the least recently used element.
      */
     private function evict(): void
     {
@@ -103,8 +114,8 @@ class LRUCache
             return;
         }
 
-        // Trouver la clé avec le plus petit timestamp
-        $oldestKey = array_search(min($this->order), $this->order);
+        // Find the key with the smallest timestamp
+        $oldestKey = array_search(min($this->order), $this->order, true);
 
         unset($this->cache[$oldestKey]);
         unset($this->order[$oldestKey]);
@@ -112,10 +123,9 @@ class LRUCache
     }
 
     /**
-     * Vérifie si une clé existe dans le cache
+     * Check if a key exists in the cache.
      *
-     * @param string $key Clé à vérifier
-     * @return bool
+     * @param string $key Key to check
      */
     public function has(string $key): bool
     {
@@ -123,9 +133,9 @@ class LRUCache
     }
 
     /**
-     * Supprime une clé du cache
+     * Remove a key from the cache.
      *
-     * @param string $key Clé à supprimer
+     * @param string $key Key to remove
      */
     public function delete(string $key): void
     {
@@ -134,7 +144,7 @@ class LRUCache
     }
 
     /**
-     * Vide complètement le cache
+     * Clear the entire cache.
      */
     public function clear(): void
     {
@@ -147,9 +157,7 @@ class LRUCache
     }
 
     /**
-     * Retourne le nombre d'éléments dans le cache
-     *
-     * @return int
+     * Get the number of elements in the cache.
      */
     public function count(): int
     {
@@ -157,9 +165,7 @@ class LRUCache
     }
 
     /**
-     * Retourne la taille maximale du cache
-     *
-     * @return int
+     * Get the maximum cache size.
      */
     public function getMaxSize(): int
     {
@@ -167,24 +173,24 @@ class LRUCache
     }
 
     /**
-     * Modifie la taille maximale du cache
+     * Set the maximum cache size.
      *
-     * @param int $maxSize Nouvelle taille max
+     * @param int $maxSize New maximum size
      */
     public function setMaxSize(int $maxSize): void
     {
         $this->maxSize = $maxSize;
 
-        // Évincer si nécessaire pour respecter la nouvelle taille
+        // Evict if necessary to respect the new size
         while (count($this->cache) > $this->maxSize) {
             $this->evict();
         }
     }
 
     /**
-     * Retourne les statistiques du cache
+     * Get cache statistics.
      *
-     * @return array
+     * @return array{size: int, max_size: int, hits: int, misses: int, hit_rate: float, evictions: int, usage_percent: float}
      */
     public function getStats(): array
     {
@@ -203,9 +209,9 @@ class LRUCache
     }
 
     /**
-     * Retourne toutes les clés du cache
+     * Get all cache keys.
      *
-     * @return array
+     * @return array<int, string>
      */
     public function keys(): array
     {
@@ -213,9 +219,9 @@ class LRUCache
     }
 
     /**
-     * Retourne toutes les valeurs du cache
+     * Get all cache values.
      *
-     * @return array
+     * @return array<int, mixed>
      */
     public function values(): array
     {
@@ -223,9 +229,9 @@ class LRUCache
     }
 
     /**
-     * Retourne un tableau associatif de tout le cache
+     * Get all cache entries.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function all(): array
     {

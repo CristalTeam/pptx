@@ -1,46 +1,66 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation\Config;
 
+use InvalidArgumentException;
+
+/**
+ * Configuration class for image optimization settings.
+ */
 class OptimizationConfig
 {
     /**
-     * Options par défaut pour les optimisations
+     * Maximum image size constant (10MB).
+     */
+    public const MAX_IMAGE_SIZE_DEFAULT = 10 * 1024 * 1024;
+
+    /**
+     * Image size warning threshold (5MB).
+     */
+    public const IMAGE_SIZE_WARNING_THRESHOLD = 5 * 1024 * 1024;
+
+    /**
+     * Default options for optimizations.
      */
     private const DEFAULTS = [
-        // Optimisation des images
+        // Image optimization
         'image_compression' => false,
         'image_quality' => 85,
         'max_image_width' => 1920,
         'max_image_height' => 1080,
         'convert_to_webp' => false,
-        
+
         // Performance
-        'lazy_loading' => true,              // Activé par défaut pour meilleures performances
-        'cache_size' => 100,                 // Taille du cache LRU
+        'lazy_loading' => true,
+        'cache_size' => 100,
         'deduplicate_images' => false,
-        'use_lru_cache' => true,            // Utiliser cache LRU au lieu d'un tableau simple
-        
+        'use_lru_cache' => true,
+
         // Batch processing
-        'batch_size' => 50,                  // Taille de batch recommandée
-        
+        'batch_size' => 50,
+
         // Validation
         'validate_images' => false,
-        'max_image_size' => 10 * 1024 * 1024, // 10MB
-        
+        'max_image_size' => self::MAX_IMAGE_SIZE_DEFAULT,
+
         // Debug
         'collect_stats' => false,
     ];
 
     /**
-     * @var array
+     * Configuration options.
+     *
+     * @var array<string, mixed>
      */
-    private $options;
+    private array $options;
 
     /**
      * OptimizationConfig constructor.
      *
-     * @param array $options Options de configuration
+     * @param array<string, mixed> $options Configuration options
+     * @throws InvalidArgumentException
      */
     public function __construct(array $options = [])
     {
@@ -49,57 +69,57 @@ class OptimizationConfig
     }
 
     /**
-     * Valide les options de configuration
+     * Validate configuration options.
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     private function validate(): void
     {
         if ($this->options['image_quality'] < 1 || $this->options['image_quality'] > 100) {
-            throw new \InvalidArgumentException('image_quality doit être entre 1 et 100');
+            throw new InvalidArgumentException('image_quality must be between 1 and 100');
         }
 
         if ($this->options['max_image_width'] < 1 || $this->options['max_image_height'] < 1) {
-            throw new \InvalidArgumentException('Les dimensions max doivent être positives');
+            throw new InvalidArgumentException('Max dimensions must be positive');
         }
 
         if ($this->options['cache_size'] < 1) {
-            throw new \InvalidArgumentException('cache_size doit être au moins 1');
+            throw new InvalidArgumentException('cache_size must be at least 1');
         }
 
         if ($this->options['max_image_size'] < 1) {
-            throw new \InvalidArgumentException('max_image_size doit être positif');
+            throw new InvalidArgumentException('max_image_size must be positive');
         }
     }
 
     /**
-     * Récupère une option de configuration
+     * Get a configuration option.
      *
-     * @param string $key Clé de l'option
-     * @return mixed Valeur de l'option
+     * @param string $key Option key
+     * @return mixed Option value
      */
-    public function get(string $key)
+    public function get(string $key): mixed
     {
         return $this->options[$key] ?? null;
     }
 
     /**
-     * Définit une option de configuration
+     * Set a configuration option.
      *
-     * @param string $key Clé de l'option
-     * @param mixed $value Valeur de l'option
+     * @param string $key Option key
+     * @param mixed $value Option value
+     * @throws InvalidArgumentException
      */
-    public function set(string $key, $value): void
+    public function set(string $key, mixed $value): void
     {
         $this->options[$key] = $value;
         $this->validate();
     }
 
     /**
-     * Vérifie si une option est activée
+     * Check if an option is enabled.
      *
-     * @param string $key Clé de l'option
-     * @return bool
+     * @param string $key Option key
      */
     public function isEnabled(string $key): bool
     {
@@ -107,9 +127,9 @@ class OptimizationConfig
     }
 
     /**
-     * Retourne toutes les options
+     * Get all options.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function all(): array
     {
@@ -117,7 +137,7 @@ class OptimizationConfig
     }
 
     /**
-     * Active les optimisations par défaut
+     * Enable default optimizations.
      */
     public function enableOptimizations(): void
     {

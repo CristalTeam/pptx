@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation\Resource;
 
-use Cristal\Presentation\PPTX;
-
+/**
+ * Theme resource class.
+ */
 class Theme extends XmlResource
 {
 }

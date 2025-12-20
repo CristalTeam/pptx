@@ -1,11 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation\Resource;
 
 use Cristal\Presentation\ResourceInterface;
 
+/**
+ * Presentation resource class for handling the main presentation.xml file.
+ */
 class Presentation extends XmlResource
 {
+    /**
+     * Add a resource to the presentation.
+     *
+     * @param ResourceInterface $resource Resource to add
+     * @return string|null The resource ID or null
+     */
     public function addResource(ResourceInterface $resource): ?string
     {
         if ($resource instanceof NoteMaster) {
@@ -26,7 +37,7 @@ class Presentation extends XmlResource
             $currentSlides = $this->content->xpath('p:sldIdLst/p:sldId');
 
             $ref = $this->content->xpath('p:sldIdLst')[0]->addChild('sldId');
-            $ref->addAttribute('id', (int)end($currentSlides)['id'] + 1);
+            $ref->addAttribute('id', (string) ((int) end($currentSlides)['id'] + 1));
             $ref->addAttribute('r:id', $rId, $this->namespaces['r']);
 
             return $rId;
@@ -36,7 +47,7 @@ class Presentation extends XmlResource
             $rId = parent::addResource($resource);
 
             $ref = $this->content->xpath('p:sldMasterIdLst')[0]->addChild('sldMasterId');
-            $ref->addAttribute('id', self::getUniqueID());
+            $ref->addAttribute('id', (string) self::getUniqueID());
             $ref->addAttribute('r:id', $rId, $this->namespaces['r']);
 
             return $rId;

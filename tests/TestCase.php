@@ -1,12 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation\Tests;
 
 use PHPUnit\Framework\TestCase as CoreTestCase;
 
+/**
+ * Base test case for PPTX tests.
+ */
 class TestCase extends CoreTestCase
 {
-    const TMP_PATH = __DIR__.'/tmp';
+    protected const TMP_PATH = __DIR__ . '/tmp';
 
     public function setUp(): void
     {
@@ -19,14 +24,15 @@ class TestCase extends CoreTestCase
 
     public function tearDown(): void
     {
-        /*parent::tearDown();
-
-        $files = array_diff(glob(self::TMP_PATH.'/*'), ['.', '..']);
-
-        foreach ($files as $file) {
-            unlink($file);
-        }
-
-        rmdir(self::TMP_PATH);*/
+        // Uncomment to clean up after tests
+        // parent::tearDown();
+        //
+        // $files = array_diff(glob(self::TMP_PATH . '/*'), ['.', '..']);
+        //
+        // foreach ($files as $file) {
+        //     unlink($file);
+        // }
+        //
+        // rmdir(self::TMP_PATH);
     }
 }

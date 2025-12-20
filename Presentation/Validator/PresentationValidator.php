@@ -1,32 +1,43 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation\Validator;
 
 use Cristal\Presentation\Config\OptimizationConfig;
 use Cristal\Presentation\Resource\Image;
 use Cristal\Presentation\Resource\Slide;
+use Cristal\Presentation\Utils\ByteFormatter;
+use Exception;
 
+/**
+ * Validator for presentations (slides and resources).
+ */
 class PresentationValidator
 {
-    /**
-     * @var ImageValidator
-     */
-    private $imageValidator;
+    use ByteFormatter;
 
     /**
-     * @var array Erreurs de validation
+     * Image validator.
      */
-    private $errors = [];
+    private ImageValidator $imageValidator;
 
     /**
-     * @var array Warnings
+     * Validation errors.
+     *
+     * @var array<int, string>
      */
-    private $warnings = [];
+    private array $errors = [];
+
+    /**
+     * Warnings.
+     *
+     * @var array<int, string>
+     */
+    private array $warnings = [];
 
     /**
      * PresentationValidator constructor.
-     *
-     * @param OptimizationConfig|null $config
      */
     public function __construct(?OptimizationConfig $config = null)
     {
@@ -34,10 +45,17 @@ class PresentationValidator
     }
 
     /**
-     * Valide un tableau de slides
+     * Validate an array of slides.
      *
-     * @param array $slides
-     * @return array Rapport de validation
+     * @param array<int, mixed> $slides
+     * @return array{
+     *     valid: bool,
+     *     total_slides: int,
+     *     valid_slides: int,
+     *     invalid_slides: int,
+     *     errors: array<int, string>,
+     *     warnings: array<int, string>
+     * }
      */
     public function validateSlides(array $slides): array
     {
@@ -55,20 +73,20 @@ class PresentationValidator
 
         foreach ($slides as $index => $slide) {
             if (!$slide instanceof Slide) {
-                $this->errors[] = "Slide $index n'est pas une instance de Slide";
+                $this->errors[] = "Slide $index is not a Slide instance";
                 $report['invalid_slides']++;
                 continue;
             }
 
             try {
-                // Valider le contenu XML
+                // Validate XML content
                 $content = $slide->getContent();
                 if (empty($content)) {
-                    $this->warnings[] = "Slide $index a un contenu vide";
+                    $this->warnings[] = "Slide $index has empty content";
                 }
 
                 $report['valid_slides']++;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->errors[] = "Slide $index: " . $e->getMessage();
                 $report['invalid_slides']++;
             }
@@ -82,10 +100,20 @@ class PresentationValidator
     }
 
     /**
-     * Valide les ressources (principalement les images)
+     * Validate resources (mainly images).
      *
-     * @param array $resources
-     * @return array Rapport de validation
+     * @param array<int, mixed> $resources
+     * @return array{
+     *     valid: bool,
+     *     total_resources: int,
+     *     valid_resources: int,
+     *     invalid_resources: int,
+     *     images_checked: int,
+     *     corrupted_images: int,
+     *     oversized_images: int,
+     *     errors: array<int, string>,
+     *     warnings: array<int, string>
+     * }
      */
     public function validateResources(array $resources): array
     {
@@ -119,16 +147,17 @@ class PresentationValidator
                     } else {
                         $report['valid_resources']++;
 
-                        // Vérifier la taille
-                        if ($imageReport['size'] > 5 * 1024 * 1024) { // > 5MB
+                        // Check size
+                        if ($imageReport['size'] > OptimizationConfig::IMAGE_SIZE_WARNING_THRESHOLD) {
                             $report['oversized_images']++;
                             $this->warnings[] = sprintf(
-                                "Image {$resource->getTarget()} est volumineuse: %s",
+                                'Image %s is large: %s',
+                                $resource->getTarget(),
                                 $this->formatBytes($imageReport['size'])
                             );
                         }
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $report['invalid_resources']++;
                     $this->errors[] = "Resource {$resource->getTarget()}: " . $e->getMessage();
                 }
@@ -145,11 +174,16 @@ class PresentationValidator
     }
 
     /**
-     * Valide une présentation complète
+     * Validate a complete presentation.
      *
-     * @param array $slides
-     * @param array $resources
-     * @return array Rapport complet
+     * @param array<int, mixed> $slides
+     * @param array<int, mixed> $resources
+     * @return array{
+     *     valid: bool,
+     *     slides: array,
+     *     resources: array,
+     *     summary: string
+     * }
      */
     public function validatePresentation(array $slides, array $resources): array
     {
@@ -165,31 +199,30 @@ class PresentationValidator
     }
 
     /**
-     * Génère un résumé de validation
+     * Generate a validation summary.
      *
-     * @param array $slidesReport
-     * @param array $resourcesReport
-     * @return string
+     * @param array{valid: bool, total_slides: int, valid_slides: int, errors: array<int, string>, warnings: array<int, string>} $slidesReport
+     * @param array{valid: bool, total_resources: int, valid_resources: int, images_checked: int, corrupted_images: int, oversized_images: int, errors: array<int, string>, warnings: array<int, string>} $resourcesReport
      */
     private function generateSummary(array $slidesReport, array $resourcesReport): string
     {
         $lines = [];
 
         $lines[] = sprintf(
-            "Slides: %d/%d valides",
+            'Slides: %d/%d valid',
             $slidesReport['valid_slides'],
             $slidesReport['total_slides']
         );
 
         $lines[] = sprintf(
-            "Ressources: %d/%d valides",
+            'Resources: %d/%d valid',
             $resourcesReport['valid_resources'],
             $resourcesReport['total_resources']
         );
 
         if ($resourcesReport['images_checked'] > 0) {
             $lines[] = sprintf(
-                "Images: %d vérifiées, %d corrompues, %d volumineuses",
+                'Images: %d checked, %d corrupted, %d oversized',
                 $resourcesReport['images_checked'],
                 $resourcesReport['corrupted_images'],
                 $resourcesReport['oversized_images']
@@ -200,40 +233,20 @@ class PresentationValidator
         $totalWarnings = count($slidesReport['warnings']) + count($resourcesReport['warnings']);
 
         if ($totalErrors > 0) {
-            $lines[] = "$totalErrors erreur(s)";
+            $lines[] = "$totalErrors error(s)";
         }
 
         if ($totalWarnings > 0) {
-            $lines[] = "$totalWarnings avertissement(s)";
+            $lines[] = "$totalWarnings warning(s)";
         }
 
         return implode(', ', $lines);
     }
 
     /**
-     * Formate une taille en octets
+     * Get all errors.
      *
-     * @param int $bytes
-     * @return string
-     */
-    private function formatBytes(int $bytes): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $index = 0;
-        $size = $bytes;
-
-        while ($size >= 1024 && $index < count($units) - 1) {
-            $size /= 1024;
-            $index++;
-        }
-
-        return round($size, 2) . ' ' . $units[$index];
-    }
-
-    /**
-     * Retourne toutes les erreurs
-     *
-     * @return array
+     * @return array<int, string>
      */
     public function getErrors(): array
     {
@@ -241,9 +254,9 @@ class PresentationValidator
     }
 
     /**
-     * Retourne tous les warnings
+     * Get all warnings.
      *
-     * @return array
+     * @return array<int, string>
      */
     public function getWarnings(): array
     {

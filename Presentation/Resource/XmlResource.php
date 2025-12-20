@@ -1,38 +1,47 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cristal\Presentation\Resource;
 
 use Cristal\Presentation\PPTX;
 use Cristal\Presentation\ResourceInterface;
 use SimpleXMLElement;
 
+/**
+ * XML resource class for handling XML files in a PPTX archive.
+ */
 class XmlResource extends GenericResource
 {
     protected const RELS_XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
 
     protected const ID_0 = 2147483647;
 
-    protected static $lastId = self::ID_0;
+    protected static int $lastId = self::ID_0;
 
     /**
-     * @var SimpleXMLElement
+     * The parsed XML content.
      */
-    public $content;
+    protected SimpleXMLElement $content;
 
     /**
-     * @var GenericResource[]
+     * Resources linked to this XML.
+     *
+     * @var array<string, ResourceInterface>
      */
-    public $resources = [];
+    protected array $resources = [];
 
     /**
-     * @var mixed
+     * Original content for change detection.
      */
-    protected $originalContent;
+    protected ?string $originalContent = null;
 
     /**
-     * @var array
+     * XML namespaces.
+     *
+     * @var array<string, string>
      */
-    protected $namespaces;
+    protected array $namespaces = [];
 
     /**
      * XmlResource constructor.
@@ -67,11 +76,28 @@ class XmlResource extends GenericResource
     }
 
     /**
+     * Get the parsed XML content.
+     */
+    public function getXmlContent(): SimpleXMLElement
+    {
+        return $this->content;
+    }
+
+    /**
+     * Set the parsed XML content.
+     */
+    public function setXmlContent(SimpleXMLElement $content): void
+    {
+        $this->content = $content;
+    }
+
+    /**
      * Return initial rels path of the XML.
      */
     protected function getInitialRelsName(): string
     {
         $pathInfo = pathinfo($this->getInitialTarget());
+
         return $pathInfo['dirname'] . '/_rels/' . $pathInfo['basename'] . '.rels';
     }
 
@@ -81,6 +107,7 @@ class XmlResource extends GenericResource
     protected function getRelsName(): string
     {
         $pathInfo = pathinfo($this->getTarget());
+
         return $pathInfo['dirname'] . '/_rels/' . $pathInfo['basename'] . '.rels';
     }
 
@@ -89,50 +116,53 @@ class XmlResource extends GenericResource
      */
     protected function mapResources(): void
     {
-        if (!count($this->resources)) {
-            $content = $this->initialDocument->getArchive()->getFromName($this->getInitialRelsName());
+        if (count($this->resources) !== 0) {
+            return;
+        }
 
-            if (!$content) {
-                return;
+        $content = $this->initialDocument->getArchive()->getFromName($this->getInitialRelsName());
+
+        if (!$content) {
+            return;
+        }
+
+        $resources = new SimpleXMLElement($content, LIBXML_NOWARNING);
+        $contentType = $this->initialDocument->getContentType();
+
+        foreach ($resources as $resource) {
+            if ((string)$resource['TargetMode'] === 'External') {
+                $res = $contentType->getResource(
+                    (string)$resource['Target'],
+                    (string)$resource['Type'],
+                    true
+                );
+            } else {
+                $res = $contentType->getResource(
+                    dirname($this->target) . '/' . (string)$resource['Target'],
+                    (string)$resource['Type']
+                );
             }
 
-            $resources = new SimpleXMLElement($content, LIBXML_NOWARNING);
-            $contentType = $this->initialDocument->getContentType();
-
-            foreach ($resources as $resource) {
-                if ((string)$resource['TargetMode'] === 'External') {
-                    $res = $contentType->getResource(
-                        (string)$resource['Target'],
-                        $resource['Type'],
-                        true
-                    );
-                } else {
-                    $res = $contentType->getResource(
-                        dirname($this->target) . '/' . $resource['Target'],
-                        $resource['Type']
-                    );
-                }
-
-                $this->resources[(string)$resource['Id']] = $res;
-            }
+            $this->resources[(string)$resource['Id']] = $res;
         }
     }
 
     /**
      * Get all resource links of the XML.
      *
-     * @return GenericResource[]
+     * @return array<string, ResourceInterface>
      */
     public function getResources(): array
     {
         $this->mapResources();
+
         return $this->resources;
     }
 
     /**
      * Get a specific resource from its identifier.
      */
-    public function getResource(string $id): ?GenericResource
+    public function getResource(string $id): ?ResourceInterface
     {
         return $this->getResources()[$id] ?? null;
     }
@@ -140,14 +170,14 @@ class XmlResource extends GenericResource
     /**
      * Add a resource to XML and generate an identifier.
      *
-     * @return string Return the identifier.
+     * @return string|null Return the identifier.
      */
     public function addResource(ResourceInterface $resource): ?string
     {
         $this->mapResources();
 
         $ids = array_merge(
-            array_map(static function ($str) {
+            array_map(static function (string $str): int {
                 return (int)str_replace('rId', '', $str);
             }, array_keys($this->resources)),
             [0]
@@ -159,6 +189,17 @@ class XmlResource extends GenericResource
     }
 
     /**
+     * Set a resource by its ID.
+     *
+     * @param string $id The resource ID (e.g., 'rId1')
+     * @param ResourceInterface $resource The resource to set
+     */
+    public function setResource(string $id, ResourceInterface $resource): void
+    {
+        $this->resources[$id] = $resource;
+    }
+
+    /**
      * Save XML and resource rels file.
      */
     protected function performSave(): void
@@ -166,7 +207,7 @@ class XmlResource extends GenericResource
         $this->resetIds();
         parent::performSave();
 
-        if (!count($this->getResources())) {
+        if (count($this->getResources()) === 0) {
             return;
         }
 
@@ -178,7 +219,7 @@ class XmlResource extends GenericResource
             $relation->addAttribute('Type', $resource->getRelType());
             $relation->addAttribute('Target', $resource->getRelativeTarget($this->getTarget()));
 
-            if($resource instanceof External){
+            if ($resource instanceof External) {
                 $relation->addAttribute('TargetMode', 'External');
             }
         }
@@ -186,11 +227,17 @@ class XmlResource extends GenericResource
         $this->document->getArchive()->addFromString($this->getRelsName(), $resourceXML->asXml());
     }
 
+    /**
+     * Check if the resource has been modified.
+     */
     public function isDraft(): bool
     {
         return $this->originalContent !== $this->content->asXML() || parent::isDraft();
     }
 
+    /**
+     * Set the highest ID from the XML content.
+     */
     protected function setHighestId(): void
     {
         if (!isset($this->namespaces['r'])) {
@@ -207,7 +254,7 @@ class XmlResource extends GenericResource
     }
 
     /**
-     * Resetting IDs, prevents errors when you a add the same SlideMaster several times.
+     * Resetting IDs, prevents errors when you add the same SlideMaster several times.
      */
     protected function resetIds(): void
     {
@@ -219,13 +266,26 @@ class XmlResource extends GenericResource
             $id = (int)$node['id'];
 
             if ($id > self::ID_0 && $node->attributes($this->namespaces['r'])->id) {
-                $node['id'] = self::getUniqueID();
+                $node['id'] = (string) self::getUniqueID();
             }
         }
     }
 
+    /**
+     * Generate a unique ID.
+     */
     public static function getUniqueID(): int
     {
         return ++self::$lastId;
+    }
+
+    /**
+     * Get the XML namespaces.
+     *
+     * @return array<string, string>
+     */
+    public function getNamespaces(): array
+    {
+        return $this->namespaces;
     }
 }
