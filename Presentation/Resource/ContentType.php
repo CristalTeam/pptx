@@ -41,10 +41,42 @@ class ContentType extends GenericResource
         // Core Properties (Dublin Core metadata)
         'application/vnd.openxmlformats-package.core-properties+xml' => CoreProperties::class,
         'application/vnd.openxmlformats-officedocument.extended-properties+xml' => XmlResource::class,
-        // Images
+        // Images - Standard formats
         'image/png' => Image::class,
         'image/jpeg' => Image::class,
+        'image/jpg' => Image::class,
+        'image/gif' => Image::class,
+        'image/bmp' => Image::class,
+        'image/tiff' => Image::class,
         'image/vnd.ms-photo' => Image::class,
+        // Images - Modern formats (Office 2019+/365)
+        'image/webp' => Image::class,
+        'image/avif' => Image::class,
+        'image/heif' => Image::class,
+        'image/heic' => Image::class,
+        // SVG (Office 365 2016+)
+        'image/svg+xml' => SvgImage::class,
+        // Audio formats
+        'audio/mpeg' => Audio::class,
+        'audio/mp3' => Audio::class,
+        'audio/wav' => Audio::class,
+        'audio/x-wav' => Audio::class,
+        'audio/mp4' => Audio::class,
+        'audio/x-m4a' => Audio::class,
+        'audio/aac' => Audio::class,
+        'audio/ogg' => Audio::class,
+        'audio/x-ms-wma' => Audio::class,
+        // Video formats
+        'video/mp4' => Video::class,
+        'video/x-ms-wmv' => Video::class,
+        'video/avi' => Video::class,
+        'video/x-msvideo' => Video::class,
+        'video/quicktime' => Video::class,
+        'video/x-m4v' => Video::class,
+        'video/webm' => Video::class,
+        'video/mpeg' => Video::class,
+        'video/x-mpeg' => Video::class,
+        // Fallback
         '_' => GenericResource::class,
     ];
 
