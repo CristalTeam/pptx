@@ -416,7 +416,7 @@ class PPTX
      * @throws FileOpenException
      * @throws FileSaveException
      */
-    public function template(array|Closure $data): self
+    public function template($data): self
     {
         foreach ($this->getSlides() as $slide) {
             $slide->template($data);
@@ -449,7 +449,7 @@ class PPTX
      *
      * @param array|Closure $data Closure or array which returns: key should match the descr attribute, value is the raw content of the image.
      */
-    public function images(array|Closure $data): self
+    public function images($data): self
     {
         foreach ($this->getSlides() as $slide) {
             $slide->images($data);

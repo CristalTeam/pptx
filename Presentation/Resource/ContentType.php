@@ -90,7 +90,7 @@ class ContentType extends GenericResource
     /**
      * LRU cache for resources.
      */
-    protected LRUCache|array $cachedResources;
+    protected $cachedResources;
 
     /**
      * Use LRU cache flag.

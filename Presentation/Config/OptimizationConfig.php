@@ -98,7 +98,7 @@ class OptimizationConfig
      * @param string $key Option key
      * @return mixed Option value
      */
-    public function get(string $key): mixed
+    public function get(string $key)
     {
         return $this->options[$key] ?? null;
     }
