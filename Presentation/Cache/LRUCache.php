@@ -64,7 +64,7 @@ class LRUCache
      * @param string $key Key to retrieve
      * @return mixed|null Value or null if not found
      */
-    public function get(string $key)
+    public function get(string $key): mixed
     {
         if (!isset($this->cache[$key])) {
             $this->misses++;
@@ -85,7 +85,7 @@ class LRUCache
      * @param string $key Key
      * @param mixed $value Value
      */
-    public function set(string $key, $value): void
+    public function set(string $key, mixed $value): void
     {
         // If key already exists, update it
         if (isset($this->cache[$key])) {

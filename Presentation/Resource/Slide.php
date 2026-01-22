@@ -18,6 +18,68 @@ class Slide extends XmlResource
     protected const TEMPLATE_SEPARATOR = '.';
 
     /**
+     * Section information from source document.
+     *
+     * @var array{name: string, id: string}|null
+     */
+    protected ?array $sourceSection = null;
+
+    /**
+     * Original slide ID from source document.
+     */
+    protected ?int $sourceSlideId = null;
+
+    /**
+     * Get the section information from the source presentation.
+     *
+     * @return array{name: string, id: string}|null Section info or null
+     */
+    public function getSourceSection(): ?array
+    {
+        return $this->sourceSection;
+    }
+
+    /**
+     * Set the section information from the source presentation.
+     *
+     * @param string $name Section name
+     * @param string $id Section GUID
+     */
+    public function setSourceSection(string $name, string $id): void
+    {
+        $this->sourceSection = ['name' => $name, 'id' => $id];
+    }
+
+    /**
+     * Get the original slide ID from source document.
+     */
+    public function getSourceSlideId(): ?int
+    {
+        return $this->sourceSlideId;
+    }
+
+    /**
+     * Set the original slide ID from source document.
+     */
+    public function setSourceSlideId(int $id): void
+    {
+        $this->sourceSlideId = $id;
+    }
+
+    /**
+     * Preserve section metadata when cloning slides.
+     * This ensures section information is maintained during merge operations.
+     */
+    public function __clone()
+    {
+        // Preserve section metadata
+        // Note: These are already copied by default shallow clone,
+        // but we make it explicit for clarity
+        // $this->sourceSection is already copied (array)
+        // $this->sourceSlideId is already copied (int)
+    }
+
+    /**
      * Template name for table row replacement.
      */
     protected const TABLE_ROW_TEMPLATE_NAME = 'replaceByNewRow';
@@ -30,7 +92,7 @@ class Slide extends XmlResource
      * @param string $default Default value if not found
      * @return string The found value or default
      */
-    protected function findDataRecursively($key, $data, string $default = ''): string
+    protected function findDataRecursively(mixed $key, mixed $data, string $default = ''): string
     {
         foreach (explode(self::TEMPLATE_SEPARATOR, (string) $key) as $segment) {
             if (isset($data[$segment])) {
@@ -48,7 +110,7 @@ class Slide extends XmlResource
      *
      * @param array|Closure $data Data to fill
      */
-    public function template($data): void
+    public function template(array|Closure $data): void
     {
         if (!$data instanceof Closure) {
             $data = function (array $matches) use ($data): string {
@@ -144,7 +206,7 @@ class Slide extends XmlResource
      *
      * @param array|Closure $data Data provider (key should match descr attribute, value is raw image content)
      */
-    public function images($data): void
+    public function images(array|Closure $data): void
     {
         if (!$data instanceof Closure) {
             $data = static function (string $key) use ($data): ?string {
@@ -214,11 +276,7 @@ class Slide extends XmlResource
     {
         $notes = $this->getNotes();
 
-        if (!$notes) {
-            return null;
-        }
-
-        return $notes->getTextContent();
+        return $notes?->getTextContent();
     }
 
     /**

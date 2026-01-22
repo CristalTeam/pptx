@@ -102,7 +102,7 @@ public function template($data): PPTX
 
 **Solution (PHP 8.0+):**
 ```php
-public function template(mixed $data): self
+public function template(array|Closure $data): self
 ```
 
 ---
@@ -452,7 +452,7 @@ public function images($data): PPTX
 
 **Solution:**
 ```php
-public function images(mixed $data): self
+public function images(array|Closure $data): self
 ```
 
 ---

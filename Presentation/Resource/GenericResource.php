@@ -71,10 +71,23 @@ class GenericResource implements ResourceInterface
 
     /**
      * Load content from the archive.
+     *
+     * @throws \RuntimeException If the resource cannot be loaded
      */
     protected function loadContent(): string
     {
-        return $this->initialDocument->getArchive()->getFromName($this->getInitialTarget());
+        $content = $this->initialDocument->getArchive()->getFromName($this->getInitialTarget());
+
+        if ($content === false) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Failed to load content for resource "%s" from archive',
+                    $this->getInitialTarget()
+                )
+            );
+        }
+        
+        return $content;
     }
 
     /**
@@ -257,11 +270,14 @@ class GenericResource implements ResourceInterface
     }
 
     /**
-     * Get the hash of the file content.
+     * Get the hash of the file content using SHA256.
+     *
+     * Uses SHA256 for robust deduplication (consistent with ImageCache).
+     * Critical for merge operations to detect identical resources.
      */
     public function getHashFile(): string
     {
-        return md5($this->getContent());
+        return hash('sha256', $this->getContent());
     }
 
     /**

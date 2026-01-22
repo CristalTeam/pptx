@@ -35,7 +35,7 @@ class OptimizationConfig
         // Performance
         'lazy_loading' => true,
         'cache_size' => 100,
-        'deduplicate_images' => false,
+        'deduplicate_images' => true, // ENABLED: Critical for merge operations to avoid duplicate media
         'use_lru_cache' => true,
 
         // Batch processing
@@ -98,7 +98,7 @@ class OptimizationConfig
      * @param string $key Option key
      * @return mixed Option value
      */
-    public function get(string $key)
+    public function get(string $key): mixed
     {
         return $this->options[$key] ?? null;
     }
