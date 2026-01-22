@@ -51,10 +51,12 @@ class XmlResource extends GenericResource
         parent::__construct($target, $relType, $contentType, $document);
 
         $originalContent = $this->document->getArchive()->getFromName($this->getInitialTarget());
-        $this->setContent($originalContent);
-        $this->originalContent = $originalContent;
-        $this->namespaces = $this->content->getNamespaces(true);
-        $this->setHighestId();
+        if($originalContent) {
+            $this->setContent($originalContent);
+            $this->originalContent = $originalContent;
+            $this->namespaces = $this->content->getNamespaces(true);
+            $this->setHighestId();
+        }
     }
 
     /**
@@ -170,22 +172,99 @@ class XmlResource extends GenericResource
     /**
      * Add a resource to XML and generate an identifier.
      *
+     * The rId must be unique within this XML's .rels file.
+     * We check both the mapped resources AND the current .rels file in the archive
+     * to avoid collisions when merging presentations.
+     *
      * @return string|null Return the identifier.
      */
     public function addResource(ResourceInterface $resource): ?string
     {
         $this->mapResources();
 
-        $ids = array_merge(
-            array_map(static function (string $str): int {
-                return (int)str_replace('rId', '', $str);
-            }, array_keys($this->resources)),
-            [0]
-        );
+        // Collect all existing rIds from mapped resources
+        $existingIds = array_map(static function (string $str): int {
+            return (int)str_replace('rId', '', $str);
+        }, array_keys($this->resources));
 
-        $this->resources['rId' . (max($ids) + 1)] = $resource;
+        // Also check the current .rels file in the archive for any rIds not yet mapped
+        // This is crucial when adding resources to a presentation that has existing relationships
+        $archiveRelsIds = $this->getExistingRelsIds();
 
-        return 'rId' . (max($ids) + 1);
+        $allIds = array_merge($existingIds, $archiveRelsIds, [0]);
+        $nextId = max($allIds) + 1;
+
+        $this->resources['rId' . $nextId] = $resource;
+
+        // Mark as modified so save() will write the changes
+        $this->hasChange = true;
+
+        return 'rId' . $nextId;
+    }
+
+    /**
+     * Get all rId values from the current .rels file in the archive.
+     * This ensures we don't create collisions with existing relationships.
+     *
+     * @return int[] Array of existing rId numbers
+     */
+    protected function getExistingRelsIds(): array
+    {
+        $relsPath = $this->getRelsName();
+        $content = $this->document->getArchive()->getFromName($relsPath);
+        
+        if (!$content) {
+            return [];
+        }
+        
+        $ids = [];
+        try {
+            $xml = new SimpleXMLElement($content, LIBXML_NOWARNING);
+            foreach ($xml->children('http://schemas.openxmlformats.org/package/2006/relationships') as $rel) {
+                $id = (string) $rel['Id'];
+                if (preg_match('/^rId(\d+)$/', $id, $matches)) {
+                    $ids[] = (int) $matches[1];
+                }
+            }
+        } catch (\Exception $e) {
+            // If parsing fails, return empty array
+        }
+        
+        return $ids;
+    }
+
+    /**
+     * Sort resources to ensure proper order in .rels files.
+     * For presentation.xml.rels: Slides first, then masters, then system resources (props, themes).
+     * This fixes the corruption issue where system resources were inserted between slides.
+     *
+     * @param array<string, ResourceInterface> $resources
+     * @return array<string, ResourceInterface>
+     */
+    protected function sortResourcesByPriority(array $resources): array
+    {
+        // Only sort for presentation.xml (not for other XML files)
+        if (!$this instanceof Presentation) {
+            return $resources;
+        }
+
+        $slides = [];
+        $masters = [];
+        $systemResources = [];
+
+        foreach ($resources as $id => $resource) {
+            if ($resource instanceof Slide) {
+                $slides[$id] = $resource;
+            } elseif ($resource instanceof SlideMaster || $resource instanceof HandoutMaster) {
+                $masters[$id] = $resource;
+            } else {
+                // NoteMaster, presProps, viewProps, theme, tableStyles, etc.
+                $systemResources[$id] = $resource;
+            }
+        }
+
+        // Order: Slides first, then masters, then system resources
+        return array_merge($slides, $masters, $systemResources);
     }
 
     /**
@@ -204,16 +283,22 @@ class XmlResource extends GenericResource
      */
     protected function performSave(): void
     {
+        // CRITICAL: Load resources BEFORE resetIds() to ensure they're preserved
+        $this->mapResources();
+
         $this->resetIds();
         parent::performSave();
 
-        if (count($this->getResources()) === 0) {
+        if (count($this->resources) === 0) {
             return;
         }
 
         $resourceXML = new SimpleXMLElement(static::RELS_XML, LIBXML_NOWARNING);
 
-        foreach ($this->resources as $id => $resource) {
+        // Sort resources to ensure proper order (slides first, system resources last)
+        $sortedResources = $this->sortResourcesByPriority($this->resources);
+
+        foreach ($sortedResources as $id => $resource) {
             $relation = $resourceXML->addChild('Relationship');
             $relation->addAttribute('Id', $id);
             $relation->addAttribute('Type', $resource->getRelType());

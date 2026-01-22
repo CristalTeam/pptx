@@ -24,26 +24,22 @@ class ImageCache
     private int $duplicatesFound = 0;
 
     /**
-     * Calculate a fast hash based on first and last bytes.
-     * Faster than md5() on the entire content.
+     * Calculate a robust hash based on full content using SHA256.
+     *
+     * IMPORTANT: Always use full content hash to avoid false negatives during merge.
+     * False negatives (different hashes for identical files) cause duplicate media bloat.
+     *
+     * Previous implementation used partial hash (first/last 8KB) which caused issues
+     * when merging PPTX files with identical images.
      *
      * @param string $content Image content
-     * @return string Fast hash
+     * @return string SHA256 hash of full content
      */
     public function fastHash(string $content): string
     {
-        $length = strlen($content);
-
-        // For small files, full hash
-        if ($length < 16384) {
-            return md5($content);
-        }
-
-        // For large files, partial hash (first 8KB + last 8KB + size)
-        $start = substr($content, 0, 8192);
-        $end = substr($content, -8192);
-
-        return md5($start . $end . $length);
+        // Always use full SHA256 hash for reliable deduplication
+        // SHA256 is faster than partial MD5 on modern PHP (7.4+)
+        return hash('sha256', $content);
     }
 
     /**

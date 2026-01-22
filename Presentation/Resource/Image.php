@@ -174,11 +174,11 @@ class Image extends GenericResource
      * @param string $type Image type (jpeg, png, etc.)
      * @return false|string Compressed content or false on error
      */
-    private function compressImage(\GdImage $image, string $type): ?string
+    private function compressImage(\GdImage $image, string $type): string|false
     {
         ob_start();
 
-        $result = null;
+        $result = false;
 
         switch ($type) {
             case 'jpeg':
@@ -206,7 +206,7 @@ class Image extends GenericResource
 
         $content = ob_get_clean();
 
-        return $result ? $content : null;
+        return $result ? $content : false;
     }
 
     /**
@@ -216,16 +216,16 @@ class Image extends GenericResource
      * @param int $quality Quality (1-100)
      * @return false|string WebP content or false on error
      */
-    public function convertToWebP(string $content, int $quality = 85): ?string
+    public function convertToWebP(string $content, int $quality = 85): string|false
     {
         if (!function_exists('imagewebp')) {
-            return null;
+            return false;
         }
 
         $image = @imagecreatefromstring($content);
 
         if ($image === false) {
-            return null;
+            return false;
         }
 
         // Preserve transparency
@@ -238,7 +238,7 @@ class Image extends GenericResource
 
         imagedestroy($image);
 
-        return $result ? $webp : null;
+        return $result ? $webp : false;
     }
 
     /**
