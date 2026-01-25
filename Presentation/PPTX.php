@@ -382,43 +382,64 @@ class PPTX
     {
         // Track which resources need their .rels regenerated
         $resourcesToSave = [];
-        
+
         // Update references for ALL resources in the processed tree
         // This includes both newly cloned AND reused resources
         foreach ($clonedResources as $resource) {
             if (!($resource instanceof XmlResource)) {
                 continue;
             }
-            
+
             $needsUpdate = false;
             $currentResources = $resource->getResources();
-            
+
             foreach ($currentResources as $rId => $subResource) {
                 $targetKey = $subResource->getTarget();
-                
+
+                // SPECIAL CASE 1: NoteSlide must point to the cloned Slide, not the original
+                if ($resource instanceof NoteSlide && $subResource instanceof Slide) {
+                    $clonedSlide = $this->findClonedSlideForNoteSlide($resource, $clonedResources, $resourceMapping);
+                    if ($clonedSlide !== null && $clonedSlide !== $subResource) {
+                        $resource->setResource($rId, $clonedSlide);
+                        $needsUpdate = true;
+                        continue; // Skip generic mapping for this rId
+                    }
+                }
+
+                // SPECIAL CASE 2: Slide must point to the cloned NoteSlide, not the original
+                if ($resource instanceof Slide && $subResource instanceof NoteSlide) {
+                    $clonedNote = $this->findClonedNoteSlideForSlide($resource, $clonedResources, $resourceMapping);
+                    if ($clonedNote !== null && $clonedNote !== $subResource) {
+                        $resource->setResource($rId, $clonedNote);
+                        $needsUpdate = true;
+                        continue; // Skip generic mapping for this rId
+                    }
+                }
+
+                // Generic mapping for all other resources
                 // If we have a mapping for this target, update the reference
                 if (array_key_exists($targetKey, $resourceMapping)) {
                     $mappedResource = $resourceMapping[$targetKey];
-                    
+
                     // Only update if the reference changed
                     // (different object or different document)
                     if ($subResource !== $mappedResource ||
                         ($subResource instanceof GenericResource &&
                          $mappedResource instanceof GenericResource &&
                          $subResource->getDocument() !== $mappedResource->getDocument())) {
-                        
+
                         $resource->setResource($rId, $mappedResource);
                         $needsUpdate = true;
                     }
                 }
             }
-            
+
             // If references were updated, force regeneration of .rels file
             if ($needsUpdate) {
                 $resourcesToSave[] = $resource;
             }
         }
-        
+
         // Force save all resources that had reference updates
         // This ensures .rels files are regenerated even for reused resources
         foreach ($resourcesToSave as $resource) {
@@ -430,6 +451,159 @@ class PPTX
                 $reflection->invoke($resource);
             }
         }
+    }
+
+    /**
+     * Find the cloned Slide that should be referenced by a NoteSlide.
+     * Uses source metadata to match the correct Slide after renaming.
+     *
+     * When a Slide is cloned and renamed (e.g., slide15 → slide20), the associated
+     * NoteSlide must be updated to point to the new Slide name, not the old one.
+     *
+     * @param NoteSlide $noteSlide The NoteSlide looking for its Slide
+     * @param array<string, ResourceInterface> $clonedResources All cloned resources
+     * @param array<string, ResourceInterface> $resourceMapping Mapping from original targets to cloned resources
+     * @return Slide|null The matching Slide or null
+     */
+    protected function findClonedSlideForNoteSlide(NoteSlide $noteSlide, array $clonedResources, array $resourceMapping): ?Slide
+    {
+        // Get the original slide reference from the NoteSlide's resources
+        foreach ($noteSlide->getResources() as $resource) {
+            if ($resource instanceof Slide) {
+                $originalTarget = $resource->getTarget();
+
+                // First, check if there's a direct mapping for this Slide
+                if (array_key_exists($originalTarget, $resourceMapping)) {
+                    $mappedResource = $resourceMapping[$originalTarget];
+                    if ($mappedResource instanceof Slide) {
+                        return $mappedResource;
+                    }
+                }
+
+                // Fallback: Search through cloned resources by sourceSlideId matching
+                foreach ($clonedResources as $clonedResource) {
+                    if ($clonedResource instanceof Slide) {
+                        // Check if this is the same original slide
+                        if ($this->isSameOriginalSlide($resource, $clonedResource)) {
+                            return $clonedResource;
+                        }
+                    }
+                }
+
+                // If not found in mapping or clonedResources, return the original
+                // (this happens when the slide already existed in destination)
+                return $resource;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find the cloned NoteSlide that should be referenced by a Slide.
+     * Uses filename matching to find the correct NoteSlide after cloning.
+     *
+     * When a NoteSlide is cloned, the parent Slide must be updated to point
+     * to the new NoteSlide, not the old one.
+     *
+     * @param Slide $slide The Slide looking for its NoteSlide
+     * @param array<string, ResourceInterface> $clonedResources All cloned resources
+     * @param array<string, ResourceInterface> $resourceMapping Mapping from original targets to cloned resources
+     * @return NoteSlide|null The matching NoteSlide or null
+     */
+    protected function findClonedNoteSlideForSlide(Slide $slide, array $clonedResources, array $resourceMapping): ?NoteSlide
+    {
+        // Get the original NoteSlide reference from the Slide's resources
+        foreach ($slide->getResources() as $resource) {
+            if ($resource instanceof NoteSlide) {
+                $originalNoteTarget = $resource->getTarget();
+
+                // First, check if there's a direct mapping for this NoteSlide
+                if (array_key_exists($originalNoteTarget, $resourceMapping)) {
+                    $mappedResource = $resourceMapping[$originalNoteTarget];
+                    if ($mappedResource instanceof NoteSlide) {
+                        return $mappedResource;
+                    }
+                }
+
+                // Fallback: Search through cloned resources by filename matching
+                // NoteSlides are matched by their sequential numbering (notesSlide1, notesSlide2, etc.)
+                foreach ($clonedResources as $clonedResource) {
+                    if ($clonedResource instanceof NoteSlide) {
+                        // Extract the sequential number from both note slides
+                        $originalNumber = $this->extractNoteSlideNumber($originalNoteTarget);
+                        $clonedNumber = $this->extractNoteSlideNumber($clonedResource->getTarget());
+
+                        // Match by sequential number OR by exact filename
+                        if ($originalNumber !== null && $clonedNumber !== null && $originalNumber === $clonedNumber) {
+                            return $clonedResource;
+                        }
+
+                        // Fallback: match by exact basename
+                        if (basename($originalNoteTarget) === basename($clonedResource->getTarget())) {
+                            return $clonedResource;
+                        }
+                    }
+                }
+
+                // If not found in mapping or clonedResources, return the original
+                return $resource;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if two Slides represent the same original slide.
+     * Uses sourceSlideId metadata for matching after renaming.
+     *
+     * @param Slide $slide1 First slide to compare
+     * @param Slide $slide2 Second slide to compare
+     * @return bool True if both slides represent the same original slide
+     */
+    protected function isSameOriginalSlide(Slide $slide1, Slide $slide2): bool
+    {
+        // Strategy 1: Compare by source slide ID (most reliable)
+        $id1 = $slide1->getSourceSlideId();
+        $id2 = $slide2->getSourceSlideId();
+
+        if ($id1 !== null && $id2 !== null && $id1 === $id2) {
+            return true;
+        }
+
+        // Strategy 2: Compare by basename (e.g., slide15.xml)
+        // This works when slides haven't been renamed
+        $basename1 = basename($slide1->getTarget());
+        $basename2 = basename($slide2->getTarget());
+
+        if ($basename1 === $basename2) {
+            return true;
+        }
+
+        // Strategy 3: They are the exact same object
+        if ($slide1 === $slide2) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Extract the sequential number from a NoteSlide filename.
+     * E.g., "ppt/notesSlides/notesSlide2.xml" → 2
+     *
+     * @param string $target The NoteSlide target path
+     * @return int|null The sequential number or null if not found
+     */
+    protected function extractNoteSlideNumber(string $target): ?int
+    {
+        // Match pattern: notesSlide{number}.xml
+        if (preg_match('/notesSlide(\d+)\.xml$/', $target, $matches)) {
+            return (int)$matches[1];
+        }
+
+        return null;
     }
 
     /**
@@ -547,16 +721,19 @@ class PPTX
      */
     public function addSlides(array $slides): self
     {
-        // Collect section information from BOTH existing slides and new slides
-        // (so it survives refreshSource cycles)
-        $sectionData = $this->collectSectionData(array_merge($this->slides, $slides));
+        // CRITICAL: Extract existing sections from presentation.xml BEFORE processing
+        // (otherwise they are lost after refreshSource)
+        $existingSections = $this->presentation->extractExistingSections();
+
+        // Collect section information from new slides
+        $newSectionData = $this->collectSectionData($slides, count($this->slides));
 
         foreach ($slides as $slide) {
             $this->addSlide($slide);
         }
 
-        // Rebuild sections using the collected data
-        $this->presentation->rebuildSectionsFromCollectedData($sectionData);
+        // Rebuild sections: merge existing sections + new sections
+        $this->presentation->rebuildSectionsFromCollectedData($existingSections, $newSectionData);
 
         return $this;
     }
@@ -565,16 +742,16 @@ class PPTX
      * Collect section information from slides before they're processed.
      * This preserves section data through save/refresh cycles.
      *
-     * @param Slide[] $slides
-     * @return array Array mapping slide source IDs to section info
+     * @param Slide[] $slides Slides to collect section data from
+     * @param int $startIndex Starting index for section data mapping
+     * @return array Array mapping slide index to section info
      */
-    protected function collectSectionData(array $slides): array
+    protected function collectSectionData(array $slides, int $startIndex = 0): array
     {
         $sectionData = [];
 
-        // Use sequential index instead of sourceSlideId to handle duplicate IDs
-        // when merging the same presentation multiple times
-        $index = 0;
+        // Use sequential index to map sections to final slide positions
+        $index = $startIndex;
         foreach ($slides as $slide) {
             $sectionInfo = $slide->getSourceSection();
 
@@ -767,18 +944,23 @@ class PPTX
      */
     public function saveAs(string $target): void
     {
+        // Reorder rIds to follow PowerPoint OPC conventions
+        // Slides must have consecutive rIds starting from rId2
+        // System resources (masters, props, themes) must come AFTER slides
+        $this->reorderPresentationRIds();
+
         // Normalize slide IDs to be sequential starting from 256
         $this->normalizeSlideIds();
-        
+
         // Clean orphaned resources before saving
         $this->cleanOrphanedResources();
-        
+
         // Update app.xml metadata before saving
         $this->updateAppProperties();
-        
+
         // Save ContentType after all modifications
         $this->contentType->save();
-        
+
         $this->close();
 
         if (!copy($this->tmpName, $target)) {
@@ -788,6 +970,72 @@ class PPTX
         $this->openFile($this->tmpName);
     }
     
+    /**
+     * Reorder rIds in presentation.xml to follow PowerPoint OPC conventions.
+     *
+     * PowerPoint expects resources in this order:
+     * 1. SlideMasters (rId1)
+     * 2. Slides (rId2, rId3, rId4, ...)
+     * 3. System resources (notesMasters, presProps, viewProps, themes, tableStyles)
+     *
+     * This method reorganizes the rIds to match this order, preventing corruption.
+     * Called before saveAs() to ensure OPC compliance.
+     *
+     * @throws Exception
+     */
+    protected function reorderPresentationRIds(): void
+    {
+        // Step 1: Collect all resources by type
+        // getResources() calls mapResources() internally
+        $slideMasters = [];
+        $slides = [];
+        $systemResources = [];
+
+        foreach ($this->presentation->getResources() as $rId => $resource) {
+            if ($resource instanceof SlideMaster) {
+                $slideMasters[$rId] = $resource;
+            } elseif ($resource instanceof Slide) {
+                $slides[$rId] = $resource;
+            } else {
+                // System resources: NoteMasters, AppProperties, CoreProperties, presProps, viewProps, themes, tableStyles
+                $systemResources[$rId] = $resource;
+            }
+        }
+
+        // Step 2: Build new rId mapping
+        // old rId => new rId
+        $rIdMapping = [];
+        $nextRId = 1;
+
+        // SlideMasters first (rId1)
+        foreach ($slideMasters as $oldRId => $resource) {
+            $rIdMapping[$oldRId] = 'rId' . $nextRId++;
+        }
+
+        // Slides second (rId2+)
+        // CRITICAL: Sort slides by their slide number before assigning rIds
+        // This ensures presentation.xml sldIdLst order matches rId order (slide1, slide2, slide3...)
+        uasort($slides, function ($a, $b) {
+            $numA = (int) preg_replace('/[^0-9]/', '', basename($a->getTarget()));
+            $numB = (int) preg_replace('/[^0-9]/', '', basename($b->getTarget()));
+            return $numA <=> $numB;
+        });
+
+        foreach ($slides as $oldRId => $resource) {
+            $rIdMapping[$oldRId] = 'rId' . $nextRId++;
+        }
+
+        // System resources last (rId N+)
+        foreach ($systemResources as $oldRId => $resource) {
+            $rIdMapping[$oldRId] = 'rId' . $nextRId++;
+        }
+
+        // Step 3: Update presentation.xml and .rels file
+        if (!empty($rIdMapping)) {
+            $this->presentation->remapResourceIds($rIdMapping);
+        }
+    }
+
     /**
      * Clean orphaned resources.
      *

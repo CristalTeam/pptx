@@ -215,9 +215,9 @@ class Presentation extends XmlResource
         $sectionLst = $ext->addChild('p14:sectionLst', null, 'http://schemas.microsoft.com/office/powerpoint/2010/main');
 
         // Add each section
-        foreach ($sections as $sectionName => $sectionData) {
+        foreach ($sections as $sectionData) {
             $section = $sectionLst->addChild('section', null, 'http://schemas.microsoft.com/office/powerpoint/2010/main');
-            $section->addAttribute('name', $sectionName);
+            $section->addAttribute('name', $sectionData['name']);
             $section->addAttribute('id', $sectionData['guid']);
 
             // Add sldIdLst to section
@@ -237,9 +237,70 @@ class Presentation extends XmlResource
      *
      * @param array $sectionData Array mapping source slide IDs to section info ['name' => ..., 'id' => ...]
      */
-    public function rebuildSectionsFromCollectedData(array $sectionData): void
+    /**
+     * Extract existing sections from presentation.xml before merge.
+     * Returns array mapping slide indices to section info.
+     *
+     * @return array Array mapping slide index to section info ['name' => ..., 'id' => ...]
+     */
+    public function extractExistingSections(): array
     {
-        if (empty($sectionData)) {
+        $existingSections = [];
+
+        // Register namespaces
+        $this->content->registerXPathNamespace('p', 'http://schemas.openxmlformats.org/presentationml/2006/main');
+        $this->content->registerXPathNamespace('p14', 'http://schemas.microsoft.com/office/powerpoint/2010/main');
+
+        // Get all slide IDs in order
+        $slideNodes = $this->content->xpath('p:sldIdLst/p:sldId');
+        $slideIdToIndex = [];
+        $index = 0;
+        foreach ($slideNodes as $slideNode) {
+            $slideId = (int)$slideNode['id'];
+            $slideIdToIndex[$slideId] = $index;
+            $index++;
+        }
+
+        // Extract sections
+        $sections = $this->content->xpath('//p14:sectionLst/p14:section');
+        if (empty($sections)) {
+            return [];
+        }
+
+        foreach ($sections as $section) {
+            $sectionName = (string)$section['name'];
+            $sectionGuid = (string)$section['id'];
+
+            // Get slide IDs in this section
+            $sectionSlides = $section->xpath('.//p14:sldIdLst/p14:sldId');
+            foreach ($sectionSlides as $sectionSlide) {
+                $slideId = (int)$sectionSlide['id'];
+                if (isset($slideIdToIndex[$slideId])) {
+                    $slideIndex = $slideIdToIndex[$slideId];
+                    $existingSections[$slideIndex] = [
+                        'name' => $sectionName,
+                        'id' => $sectionGuid
+                    ];
+                }
+            }
+        }
+
+        return $existingSections;
+    }
+
+    /**
+     * Rebuild sections from collected section data.
+     * Merges existing sections with new sections from added slides.
+     *
+     * @param array $existingSections Array mapping slide index to section info from current presentation
+     * @param array $newSections Array mapping slide index to section info from new slides
+     */
+    public function rebuildSectionsFromCollectedData(array $existingSections, array $newSections = []): void
+    {
+        // Merge existing and new section data
+        $allSectionData = $existingSections + $newSections;
+
+        if (empty($allSectionData)) {
             return;
         }
 
@@ -252,10 +313,10 @@ class Presentation extends XmlResource
             $finalSlideIds[] = (int)$sldIdNode['id'];
         }
 
-        // Collect sections - map slides by index (sectionData keys are now indices 0, 1, 2...)
-        $sections = [];  // ['sectionName' => ['guid' => 'xxx', 'slideIds' => [...]]]
+        // Collect sections - map slides by index
+        $sections = [];  // ['sectionKey' => ['name' => ..., 'guid' => ..., 'slideIds' => [...]]]
 
-        foreach ($sectionData as $index => $sectionInfo) {
+        foreach ($allSectionData as $index => $sectionInfo) {
             // Skip if we don't have a corresponding final slide
             if (!isset($finalSlideIds[$index])) {
                 continue;
@@ -265,15 +326,19 @@ class Presentation extends XmlResource
             $sectionName = $sectionInfo['name'];
             $sectionGuid = $sectionInfo['id'];
 
+            // Create unique key: name + guid to handle multiple sections with same name
+            $sectionKey = $sectionName . '_' . $sectionGuid;
+
             // Add slide to section
-            if (!isset($sections[$sectionName])) {
-                $sections[$sectionName] = [
+            if (!isset($sections[$sectionKey])) {
+                $sections[$sectionKey] = [
+                    'name' => $sectionName,
                     'guid' => $sectionGuid,
                     'slideIds' => []
                 ];
             }
 
-            $sections[$sectionName]['slideIds'][] = $finalSlideId;
+            $sections[$sectionKey]['slideIds'][] = $finalSlideId;
         }
 
         if (empty($sections)) {
@@ -302,9 +367,9 @@ class Presentation extends XmlResource
         $sectionLst = $ext->addChild('p14:sectionLst', null, 'http://schemas.microsoft.com/office/powerpoint/2010/main');
 
         // Add each section
-        foreach ($sections as $sectionName => $sectionData) {
+        foreach ($sections as $sectionData) {
             $section = $sectionLst->addChild('section', null, 'http://schemas.microsoft.com/office/powerpoint/2010/main');
-            $section->addAttribute('name', $sectionName);
+            $section->addAttribute('name', $sectionData['name']);
             $section->addAttribute('id', $sectionData['guid']);
 
             // Add sldIdLst to section
@@ -445,5 +510,105 @@ class Presentation extends XmlResource
         }
 
         return null;
+    }
+
+    /**
+     * Remap all resource IDs according to the provided mapping.
+     * Updates both the .rels file and the XML content references.
+     *
+     * This method is used to reorganize rIds to follow PowerPoint OPC conventions:
+     * - SlideMasters should have rId1
+     * - Slides should have consecutive rIds (rId2, rId3, rId4, ...)
+     * - System resources should come after slides
+     *
+     * @param array<string, string> $mapping Old rId => New rId
+     * @throws Exception
+     */
+    public function remapResourceIds(array $mapping): void
+    {
+        // Step 1: Remap internal resources array
+        $newResources = [];
+        foreach ($this->resources as $oldRId => $resource) {
+            $newRId = $mapping[$oldRId] ?? $oldRId;
+            $newResources[$newRId] = $resource;
+        }
+        $this->resources = $newResources;
+
+        // Step 2: Update sldIdLst in presentation.xml
+        // CRITICAL: Must reorder <p:sldId> elements to match new rId sequence
+        // PowerPoint expects slides in order: rId2, rId3, rId4, ...
+        $slides = $this->content->xpath('p:sldIdLst/p:sldId');
+
+        // First, update all r:id attributes and collect slide info
+        $slideData = [];
+        foreach ($slides as $sldId) {
+            $oldRId = (string)$sldId->attributes($this->namespaces['r'])->id;
+            $newRId = $mapping[$oldRId] ?? $oldRId;
+            $slideId = (string)$sldId['id'];
+
+            // Update the r:id attribute
+            $sldId->attributes($this->namespaces['r'])->id = $newRId;
+
+            // Store slide data for reordering
+            $slideData[] = [
+                'element' => $sldId,
+                'rId' => $newRId,
+                'id' => $slideId,
+            ];
+        }
+
+        // Sort by new rId (extract numeric part for sorting)
+        usort($slideData, function ($a, $b) {
+            $numA = (int) preg_replace('/[^0-9]/', '', $a['rId']);
+            $numB = (int) preg_replace('/[^0-9]/', '', $b['rId']);
+            return $numA <=> $numB;
+        });
+
+        // Rebuild the sldIdLst in correct order
+        $sldIdLst = $this->content->xpath('p:sldIdLst')[0];
+
+        // Remove all existing <p:sldId> elements
+        foreach ($slides as $sldId) {
+            unset($sldId[0]);
+        }
+
+        // Re-add them in sorted order
+        foreach ($slideData as $data) {
+            $newSldId = $sldIdLst->addChild('p:sldId', null, $this->namespaces['p']);
+            $newSldId->addAttribute('id', $data['id']);
+            $newSldId->addAttribute('r:id', $data['rId'], $this->namespaces['r']);
+        }
+
+        // Step 3: Update sldMasterIdLst
+        $masters = $this->content->xpath('p:sldMasterIdLst/p:sldMasterId');
+        foreach ($masters as $masterId) {
+            $oldRId = (string)$masterId->attributes($this->namespaces['r'])->id;
+            if (isset($mapping[$oldRId])) {
+                $masterId->attributes($this->namespaces['r'])->id = $mapping[$oldRId];
+            }
+        }
+
+        // Step 4: Update notesMasterIdLst
+        $noteMasters = $this->content->xpath('p:notesMasterIdLst/p:notesMasterId');
+        foreach ($noteMasters as $noteId) {
+            $oldRId = (string)$noteId->attributes($this->namespaces['r'])->id;
+            if (isset($mapping[$oldRId])) {
+                $noteId->attributes($this->namespaces['r'])->id = $mapping[$oldRId];
+            }
+        }
+
+        // Step 5: Update handoutMasterIdLst if present
+        $handoutMasters = $this->content->xpath('p:handoutMasterIdLst/p:handoutMasterId');
+        foreach ($handoutMasters as $handoutId) {
+            $oldRId = (string)$handoutId->attributes($this->namespaces['r'])->id;
+            if (isset($mapping[$oldRId])) {
+                $handoutId->attributes($this->namespaces['r'])->id = $mapping[$oldRId];
+            }
+        }
+
+        // Step 6: Force regeneration of .rels file with new IDs
+        // Mark as draft to ensure save() regenerates the .rels file
+        $this->isDraft = true;
+        $this->save();
     }
 }

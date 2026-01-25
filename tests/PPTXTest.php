@@ -38,12 +38,12 @@ class PPTXTest extends TestCase
     public function it_merges_two_pptx(): void
     {
         $nbSourceSlides = count($this->pptx->getSlides());
-        $pptxToAppend = new PPTX(__DIR__ . '/mock/FIN.pptx');
-
-        $this->pptx->addSlides($pptxToAppend->getSlides());
 
         $pptxToAppend2 = new PPTX(__DIR__ . '/mock/MILIEU.pptx');
         $this->pptx->addSlides($pptxToAppend2->getSlides());
+
+        $pptxToAppend = new PPTX(__DIR__ . '/mock/FIN.pptx');
+        $this->pptx->addSlides($pptxToAppend->getSlides());
 
         $this->pptx->saveAs(self::TMP_PATH . '/merge.pptx');
 
