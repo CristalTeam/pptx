@@ -10,6 +10,8 @@ use Cristal\Presentation\Config\OptimizationConfig;
 use Cristal\Presentation\Exception\FileOpenException;
 use Cristal\Presentation\Exception\FileSaveException;
 use Cristal\Presentation\Resource\AppProperties;
+use Cristal\Presentation\Resource\Audio;
+use Cristal\Presentation\Resource\Chart;
 use Cristal\Presentation\Resource\ContentType;
 use Cristal\Presentation\Resource\GenericResource;
 use Cristal\Presentation\Resource\Image;
@@ -19,7 +21,9 @@ use Cristal\Presentation\Resource\Presentation;
 use Cristal\Presentation\Resource\Slide;
 use Cristal\Presentation\Resource\SlideLayout;
 use Cristal\Presentation\Resource\SlideMaster;
+use Cristal\Presentation\Resource\SvgImage;
 use Cristal\Presentation\Resource\Theme;
+use Cristal\Presentation\Resource\Video;
 use Cristal\Presentation\Resource\XmlResource;
 use Cristal\Presentation\Stats\OptimizationStats;
 use Cristal\Presentation\Validator\ImageValidator;
@@ -383,10 +387,18 @@ class PPTX
         // Track which resources need their .rels regenerated
         $resourcesToSave = [];
 
-        // Update references for ALL resources in the processed tree
-        // This includes both newly cloned AND reused resources
+        // Update references for cloned resources only
+        // SKIP SlideMasters - they are REUSED (not cloned) and their references
+        // already point to destination resources, not source resources.
+        // Updating their references would incorrectly replace existing SlideLayouts
+        // with newly cloned ones (e.g., slideLayout12 → slideLayout14)
         foreach ($clonedResources as $resource) {
             if (!($resource instanceof XmlResource)) {
+                continue;
+            }
+
+            // Skip SlideMasters - their references are already correct
+            if ($resource instanceof SlideMaster) {
                 continue;
             }
 
@@ -611,6 +623,9 @@ class PPTX
      * CRITICAL: Add resources in the correct order to ensure OPC compliance.
      * Slides MUST be added first, then system resources (masters, props, themes).
      *
+     * IMPORTANT: Only presentation-level resources should be added to presentation.xml.rels.
+     * Child resources (images, layouts, notes) are already linked via their parent's .rels file.
+     *
      * @param array<string, ResourceInterface> $clonedResources
      * @param GenericResource $originalResource
      */
@@ -618,7 +633,8 @@ class PPTX
     {
         // Separate resources by type to control registration order
         $slides = [];
-        $otherResources = [];
+        $presentationLevelResources = [];
+        $slideLayouts = [];
 
         foreach ($clonedResources as $originalTarget => $resource) {
             // Only consider resources that need to be added (not already in presentation)
@@ -632,9 +648,15 @@ class PPTX
 
             if ($resource instanceof Slide) {
                 $slides[] = $resource;
-            } else {
-                $otherResources[] = $resource;
+            } elseif ($resource instanceof SlideLayout) {
+                // Collect SlideLayouts to register them with their SlideMaster
+                $slideLayouts[] = $resource;
+            } elseif ($this->shouldRegisterInPresentationRels($resource)) {
+                // Only add resources that belong in presentation.xml.rels
+                $presentationLevelResources[] = $resource;
             }
+            // Resources not meeting the criteria (images, noteslides, etc.)
+            // are already properly linked via their parent resource's .rels file
         }
 
         // CRITICAL: Add slides FIRST to get rIds 2-N
@@ -643,10 +665,160 @@ class PPTX
             $this->slides[] = $slide;
         }
 
-        // Then add system resources (masters, props, themes) to get rIds N+1...
-        foreach ($otherResources as $resource) {
+        // Then add presentation-level system resources (masters, props, themes) to get rIds N+1...
+        foreach ($presentationLevelResources as $resource) {
             $this->presentation->addResource($resource);
         }
+
+        // Register SlideLayouts with their parent SlideMaster
+        $this->registerSlideLayoutsWithMaster($slideLayouts, $clonedResources);
+    }
+
+    /**
+     * Register SlideLayouts with their parent SlideMaster.
+     *
+     * When a SlideLayout is cloned, it must be added to the SlideMaster's .rels file.
+     * The SlideLayout already has a relation TO the SlideMaster, but the SlideMaster
+     * must also have a relation TO the SlideLayout for OPC compliance.
+     *
+     * IMPORTANT: The SlideLayout may reference a SlideMaster from the SOURCE document.
+     * We must find the corresponding SlideMaster in the DESTINATION document.
+     *
+     * @param SlideLayout[] $slideLayouts The SlideLayouts to register
+     * @param array<string, ResourceInterface> $clonedResources Mapping of cloned resources
+     */
+    protected function registerSlideLayoutsWithMaster(array $slideLayouts, array $clonedResources): void
+    {
+        // Track which SlideMasters were modified
+        $modifiedMasters = [];
+
+        foreach ($slideLayouts as $slideLayout) {
+            // Find the SlideMaster this layout belongs to in the DESTINATION document
+            $slideMaster = $this->findDestinationSlideMasterForLayout($slideLayout, $clonedResources);
+
+            if ($slideMaster === null) {
+                continue;
+            }
+
+            // Check if this SlideLayout is already registered with the SlideMaster
+            $alreadyRegistered = false;
+            foreach ($slideMaster->getResources() as $existingResource) {
+                if ($existingResource instanceof SlideLayout &&
+                    $existingResource->getTarget() === $slideLayout->getTarget()) {
+                    $alreadyRegistered = true;
+                    break;
+                }
+            }
+
+            if (!$alreadyRegistered) {
+                // Add the SlideLayout to the SlideMaster's resources
+                $slideMaster->addResource($slideLayout);
+                // Track this master as modified
+                $masterId = spl_object_id($slideMaster);
+                $modifiedMasters[$masterId] = $slideMaster;
+            }
+        }
+
+        // Force save all modified SlideMasters to persist the .rels changes
+        foreach ($modifiedMasters as $master) {
+            $master->save();
+        }
+    }
+
+    /**
+     * Find the destination SlideMaster for a SlideLayout.
+     *
+     * The SlideLayout may reference a SlideMaster from the source document.
+     * We need to find the corresponding SlideMaster in the destination document
+     * (either cloned or reused).
+     *
+     * @param SlideLayout $slideLayout The SlideLayout to find the master for
+     * @param array<string, ResourceInterface> $clonedResources Mapping of cloned resources
+     * @return SlideMaster|null The destination SlideMaster or null if not found
+     */
+    protected function findDestinationSlideMasterForLayout(SlideLayout $slideLayout, array $clonedResources): ?SlideMaster
+    {
+        // First, find the SlideMaster the SlideLayout references
+        $layoutMaster = null;
+        foreach ($slideLayout->getResources() as $resource) {
+            if ($resource instanceof SlideMaster) {
+                $layoutMaster = $resource;
+                break;
+            }
+        }
+
+        if ($layoutMaster === null) {
+            return null;
+        }
+
+        // Get the target path from clonedResources mapping (source → dest)
+        // This tells us what target path the SlideMaster has in the destination
+        $sourceTarget = $layoutMaster->getTarget();
+        $destTarget = $sourceTarget; // Default: same path
+
+        if (isset($clonedResources[$sourceTarget])) {
+            $mappedResource = $clonedResources[$sourceTarget];
+            if ($mappedResource instanceof SlideMaster) {
+                $destTarget = $mappedResource->getTarget();
+            }
+        }
+
+        // CRITICAL: Find the SlideMaster from the presentation's resources
+        // by matching the target path. This ensures we get the ACTUAL object
+        // that's in the presentation, not a different object with the same path.
+        foreach ($this->presentation->getResources() as $resource) {
+            if ($resource instanceof SlideMaster && $resource->getTarget() === $destTarget) {
+                return $resource;
+            }
+        }
+
+        // Fallback: return first SlideMaster from presentation
+        foreach ($this->presentation->getResources() as $resource) {
+            if ($resource instanceof SlideMaster) {
+                return $resource;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Determine if a resource should be registered in presentation.xml.rels.
+     *
+     * Only these resource types belong in presentation.xml.rels:
+     * - SlideMaster (p:sldMasterIdLst)
+     * - NoteMaster (p:notesMasterIdLst)
+     * - HandoutMaster (p:handoutMasterIdLst)
+     * - Theme (direct relationship)
+     * - PresProps, ViewProps, TableStyles, RevisionInfo, CommentAuthors, etc.
+     *
+     * These resources should NOT be in presentation.xml.rels (they're linked via parent .rels):
+     * - Image, Audio, Video, SvgImage, Chart (media resources)
+     * - SlideLayout (linked from SlideMaster)
+     * - NoteSlide (linked from Slide)
+     *
+     * @param GenericResource $resource The resource to check
+     * @return bool True if the resource belongs in presentation.xml.rels
+     */
+    protected function shouldRegisterInPresentationRels(GenericResource $resource): bool
+    {
+        // Resources that MUST NOT be in presentation.xml.rels
+        // (they are already linked from their parent container's .rels file)
+        if ($resource instanceof Image ||
+            $resource instanceof Audio ||
+            $resource instanceof Video ||
+            $resource instanceof SvgImage ||
+            $resource instanceof Chart ||
+            $resource instanceof SlideLayout ||
+            $resource instanceof NoteSlide) {
+            return false;
+        }
+
+        // Resources that SHOULD be in presentation.xml.rels
+        // - SlideMaster, NoteMaster, HandoutMaster (handled specially in Presentation::addResource)
+        // - Theme (presentation-level theme reference)
+        // - PresProps, ViewProps, TableStyles, etc. (XmlResource with specific paths)
+        return true;
     }
 
     /**
@@ -681,6 +853,12 @@ class PPTX
             // Collect stats for images if enabled
             if ($resource instanceof Image && $this->config->isEnabled('collect_stats')) {
                 $this->collectImageStats($resource);
+            }
+
+            // Skip SlideMasters - their .rels files are managed by registerSlideLayoutsWithMaster()
+            // Saving them here would overwrite the layout registrations we just added
+            if ($resource instanceof SlideMaster) {
+                continue;
             }
 
             $resource->save();

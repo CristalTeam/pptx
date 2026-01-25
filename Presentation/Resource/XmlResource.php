@@ -190,11 +190,14 @@ class XmlResource extends GenericResource
         // Also check the current .rels file in the archive for any rIds not yet mapped
         // This is crucial when adding resources to a presentation that has existing relationships
         $archiveRelsIds = $this->getExistingRelsIds();
-        
+
         $allIds = array_merge($existingIds, $archiveRelsIds, [0]);
         $nextId = max($allIds) + 1;
 
         $this->resources['rId' . $nextId] = $resource;
+
+        // Mark as modified so save() will write the changes
+        $this->hasChange = true;
 
         return 'rId' . $nextId;
     }
