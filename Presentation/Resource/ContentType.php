@@ -253,15 +253,31 @@ class ContentType extends GenericResource
     {
         // For SlideLayouts: compare by layout type (title, obj, blank, etc.)
         // This matches PowerPoint's behavior which reuses layouts with same type
+        // For layouts without a type (null), fall back to content hash comparison
         if ($originalResource instanceof SlideLayout) {
             $originalType = $originalResource->getLayoutType();
+            $startBy = dirname($originalResource->getTarget()) . '/';
+
             if ($originalType !== null) {
-                $startBy = dirname($originalResource->getTarget()) . '/';
+                // Compare by layout type
                 foreach ($this->cachedFilename as $path) {
                     if (str_starts_with($path, $startBy) && dirname($path) . '/' === $startBy) {
                         $existingFile = $this->getResource($path, $originalResource->getRelType(), false, true);
                         if ($existingFile instanceof SlideLayout
                             && $existingFile->getLayoutType() === $originalType) {
+                            return $existingFile;
+                        }
+                    }
+                }
+            } else {
+                // No layout type - use content hash comparison
+                $originalHash = $originalResource->getHashFile();
+                foreach ($this->cachedFilename as $path) {
+                    if (str_starts_with($path, $startBy) && dirname($path) . '/' === $startBy) {
+                        $existingFile = $this->getResource($path, $originalResource->getRelType(), false, true);
+                        if ($existingFile instanceof SlideLayout
+                            && $existingFile->getLayoutType() === null
+                            && $existingFile->getHashFile() === $originalHash) {
                             return $existingFile;
                         }
                     }
