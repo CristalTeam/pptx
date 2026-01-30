@@ -92,7 +92,7 @@ class Slide extends XmlResource
      * @param string $default Default value if not found
      * @return string The found value or default
      */
-    protected function findDataRecursively(mixed $key, mixed $data, string $default = ''): string
+    protected function findDataRecursively($key, $data, string $default = ''): string
     {
         foreach (explode(self::TEMPLATE_SEPARATOR, (string) $key) as $segment) {
             if (isset($data[$segment])) {
@@ -110,7 +110,7 @@ class Slide extends XmlResource
      *
      * @param array|Closure $data Data to fill
      */
-    public function template(array|Closure $data): void
+    public function template($data): void
     {
         if (!$data instanceof Closure) {
             $data = function (array $matches) use ($data): string {
@@ -206,7 +206,7 @@ class Slide extends XmlResource
      *
      * @param array|Closure $data Data provider (key should match descr attribute, value is raw image content)
      */
-    public function images(array|Closure $data): void
+    public function images($data): void
     {
         if (!$data instanceof Closure) {
             $data = static function (string $key) use ($data): ?string {
@@ -272,11 +272,15 @@ class Slide extends XmlResource
      *
      * @return string|null Notes text or null if no notes exist
      */
-    public function getNotesText(): ?string
+    public function getNotesText(): string
     {
         $notes = $this->getNotes();
 
-        return $notes?->getTextContent();
+        if($notes == null) {
+            return '';
+        }
+
+        return $notes->getTextContent();
     }
 
     /**

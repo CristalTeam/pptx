@@ -98,7 +98,7 @@ class OptimizationConfig
      * @param string $key Option key
      * @return mixed Option value
      */
-    public function get(string $key): mixed
+    public function get(string $key)
     {
         return $this->options[$key] ?? null;
     }
@@ -110,7 +110,7 @@ class OptimizationConfig
      * @param mixed $value Option value
      * @throws InvalidArgumentException
      */
-    public function set(string $key, mixed $value): void
+    public function set(string $key, $value): void
     {
         $this->options[$key] = $value;
         $this->validate();
