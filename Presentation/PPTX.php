@@ -397,8 +397,10 @@ class PPTX
                 continue;
             }
 
-            // Skip SlideMasters - their references are already correct
+            // For SlideMasters: only update Theme reference (not SlideLayouts)
+            // SlideLayouts are handled separately by registerSlideLayoutsWithMaster()
             if ($resource instanceof SlideMaster) {
+                $this->updateSlideMasterThemeReference($resource, $resourceMapping);
                 continue;
             }
 
@@ -564,6 +566,34 @@ class PPTX
         }
 
         return null;
+    }
+
+    /**
+     * Update Theme reference for a cloned SlideMaster.
+     *
+     * When a SlideMaster is cloned, its resources are cleared to prevent
+     * cross-master layout conflicts. This method re-adds the Theme reference
+     * using the cloned Theme from the resource mapping.
+     *
+     * @param SlideMaster $slideMaster The cloned SlideMaster
+     * @param array<string, ResourceInterface> $resourceMapping Mapping of old target -> new resource
+     */
+    protected function updateSlideMasterThemeReference(SlideMaster $slideMaster, array $resourceMapping): void
+    {
+        // Get the original Theme target that this master referenced before cloning
+        $originalThemeTarget = $slideMaster->getOriginalThemeTarget();
+
+        if ($originalThemeTarget === null) {
+            return; // No Theme reference to restore
+        }
+
+        // Find the cloned Theme in the resource mapping
+        if (isset($resourceMapping[$originalThemeTarget])) {
+            $clonedTheme = $resourceMapping[$originalThemeTarget];
+            if ($clonedTheme instanceof Theme) {
+                $slideMaster->addResource($clonedTheme);
+            }
+        }
     }
 
     /**
@@ -1047,10 +1077,16 @@ class PPTX
                 }
             }
 
-            // CRITICAL: Don't traverse NoteSlide children to avoid circular references
-            // NoteSlides reference their parent Slide, which would cause the Slide
-            // to be cloned twice (first as root, then as NoteSlide's child)
+            // CRITICAL: For NoteSlides, only traverse NoteMaster children
+            // NoteSlides reference their parent Slide (circular!) AND the NoteMaster (needed!)
+            // We must collect the NoteMaster but skip the Slide to avoid double-cloning
             if ($resource instanceof NoteSlide) {
+                foreach ($resource->getResources() as $subResource) {
+                    // Only traverse NoteMaster - skip Slide to prevent circular reference
+                    if ($subResource instanceof NoteMaster) {
+                        $this->getResourceTree($subResource, $resourceList, $forceCloneTargets);
+                    }
+                }
                 return $resourceList;
             }
 
