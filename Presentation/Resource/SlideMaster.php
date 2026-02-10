@@ -45,6 +45,10 @@ class SlideMaster extends XmlResource
         // Clear the resources array to prevent source layout references
         $this->resources = [];
 
+        // CRITICAL: Clear the sldLayoutIdLst in the XML content
+        // Otherwise the old layout references remain and new ones are duplicated
+        $this->clearSldLayoutIdLst();
+
         // Mark as cloned so mapResources() won't re-read from source
         $this->isCloned = true;
 
@@ -96,6 +100,33 @@ class SlideMaster extends XmlResource
         }
 
         return $rId;
+    }
+
+    /**
+     * Clear all entries from the <p:sldLayoutIdLst> element in the XML content.
+     * Called during clone to prevent duplicate layout references.
+     */
+    protected function clearSldLayoutIdLst(): void
+    {
+        $xml = $this->getXmlContent();
+        $namespaces = $xml->getNamespaces(true);
+
+        $pNs = $namespaces['p'] ?? 'http://schemas.openxmlformats.org/presentationml/2006/main';
+        $xml->registerXPathNamespace('p', $pNs);
+
+        $sldLayoutIdLst = $xml->xpath('//p:sldLayoutIdLst');
+
+        if (empty($sldLayoutIdLst)) {
+            return;
+        }
+
+        $layoutIdList = $sldLayoutIdLst[0];
+
+        // Remove all child elements (sldLayoutId entries)
+        $dom = dom_import_simplexml($layoutIdList);
+        while ($dom->firstChild) {
+            $dom->removeChild($dom->firstChild);
+        }
     }
 
     /**

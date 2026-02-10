@@ -314,7 +314,28 @@ class Presentation extends XmlResource
         }
 
         // Collect sections - map slides by index
-        $sections = [];  // ['sectionKey' => ['name' => ..., 'guid' => ..., 'slideIds' => [...]]]
+        $sections = [];  // ['sectionKey' => ['name' => ..., 'guid' => ..., 'slideIds' => [...], 'order' => int]]
+        $sectionOrder = 0;
+
+        // CRITICAL: Find slides without section data - they need a default section
+        // When sectionLst exists, ALL slides must be in a section
+        $orphanedSlideIds = [];
+        foreach ($finalSlideIds as $index => $slideId) {
+            if (!isset($allSectionData[$index])) {
+                $orphanedSlideIds[] = $slideId;
+            }
+        }
+
+        // If there are orphaned slides, create a default section FIRST
+        if (!empty($orphanedSlideIds)) {
+            $defaultSectionKey = 'Section par défaut_{D57B21AD-B6CD-49C4-8F21-F21D0058913F}';
+            $sections[$defaultSectionKey] = [
+                'name' => 'Section par défaut',
+                'guid' => '{D57B21AD-B6CD-49C4-8F21-F21D0058913F}',
+                'slideIds' => $orphanedSlideIds,
+                'order' => $sectionOrder++
+            ];
+        }
 
         foreach ($allSectionData as $index => $sectionInfo) {
             // Skip if we don't have a corresponding final slide
@@ -334,7 +355,8 @@ class Presentation extends XmlResource
                 $sections[$sectionKey] = [
                     'name' => $sectionName,
                     'guid' => $sectionGuid,
-                    'slideIds' => []
+                    'slideIds' => [],
+                    'order' => $sectionOrder++
                 ];
             }
 
@@ -344,6 +366,9 @@ class Presentation extends XmlResource
         if (empty($sections)) {
             return;
         }
+
+        // Sort sections by order to preserve original ordering (default section first)
+        uasort($sections, fn($a, $b) => $a['order'] <=> $b['order']);
 
         // Remove old sections
         $this->removeSections();
@@ -580,11 +605,49 @@ class Presentation extends XmlResource
         }
 
         // Step 3: Update sldMasterIdLst
+        // CRITICAL: Must reorder <p:sldMasterId> elements to match new rId sequence
+        // PowerPoint expects masters in order: rId1, rId2, rId3, ...
         $masters = $this->content->xpath('p:sldMasterIdLst/p:sldMasterId');
+
+        // Collect master data with new rIds
+        $masterData = [];
         foreach ($masters as $masterId) {
             $oldRId = (string)$masterId->attributes($this->namespaces['r'])->id;
-            if (isset($mapping[$oldRId])) {
-                $masterId->attributes($this->namespaces['r'])->id = $mapping[$oldRId];
+            $newRId = $mapping[$oldRId] ?? $oldRId;
+            $id = (string)$masterId['id'];
+
+            // Update the r:id attribute
+            $masterId->attributes($this->namespaces['r'])->id = $newRId;
+
+            $masterData[] = [
+                'element' => $masterId,
+                'rId' => $newRId,
+                'id' => $id,
+            ];
+        }
+
+        // Sort by new rId (extract numeric part for sorting)
+        usort($masterData, function ($a, $b) {
+            $numA = (int) preg_replace('/[^0-9]/', '', $a['rId']);
+            $numB = (int) preg_replace('/[^0-9]/', '', $b['rId']);
+            return $numA <=> $numB;
+        });
+
+        // Rebuild the sldMasterIdLst in correct order
+        $sldMasterIdLst = $this->content->xpath('p:sldMasterIdLst');
+        if (!empty($sldMasterIdLst)) {
+            $sldMasterIdLst = $sldMasterIdLst[0];
+
+            // Remove all existing <p:sldMasterId> elements
+            foreach ($masters as $masterId) {
+                unset($masterId[0]);
+            }
+
+            // Re-add them in sorted order
+            foreach ($masterData as $data) {
+                $newMasterId = $sldMasterIdLst->addChild('p:sldMasterId', null, $this->namespaces['p']);
+                $newMasterId->addAttribute('id', $data['id']);
+                $newMasterId->addAttribute('r:id', $data['rId'], $this->namespaces['r']);
             }
         }
 
