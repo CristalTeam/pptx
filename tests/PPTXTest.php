@@ -9,16 +9,16 @@ use Cristal\Presentation\PPTX;
 class PPTXTest extends TestCase
 {
     /**
-     * Number of slides in the test PowerPoint.
+     * Number of slides in the test PowerPoint (garde.pptx has 2 slides).
      */
-    private const POWERPOINT_SLIDE_COUNT = 14;
+    private const POWERPOINT_SLIDE_COUNT = 2;
 
     protected PPTX $pptx;
 
     public function setUp(): void
     {
         parent::setUp();
-        $this->pptx = new PPTX(__DIR__ . '/mock/DEBUT.pptx');
+        $this->pptx = new PPTX(__DIR__ . '/mock/garde.pptx');
     }
 
     /**
@@ -39,18 +39,22 @@ class PPTXTest extends TestCase
     {
         $nbSourceSlides = count($this->pptx->getSlides());
 
+        $slidesAppened = 0;
+
+        $pptxToAppend = new PPTX(__DIR__ . '/mock/aquitaine.pptx');
+        $this->pptx->addSlides($pptxToAppend->getSlides());
+        $slidesAppened += count($pptxToAppend->getSlides());
+
         $pptxToAppend2 = new PPTX(__DIR__ . '/mock/MILIEU.pptx');
         $this->pptx->addSlides($pptxToAppend2->getSlides());
-
-        $pptxToAppend = new PPTX(__DIR__ . '/mock/FIN.pptx');
-        $this->pptx->addSlides($pptxToAppend->getSlides());
+        $slidesAppened += count($pptxToAppend2->getSlides());
 
         $this->pptx->saveAs(self::TMP_PATH . '/merge.pptx');
 
         $mergedPPTX = new PPTX(self::TMP_PATH . '/merge.pptx');
 
         $this->assertEquals(
-            $nbSourceSlides + count($pptxToAppend->getSlides()) + count($pptxToAppend2->getSlides()),
+            $nbSourceSlides + $slidesAppened,
             count($mergedPPTX->getSlides())
         );
     }

@@ -12,6 +12,74 @@ use Cristal\Presentation\ResourceInterface;
 class SlideMaster extends XmlResource
 {
     /**
+     * Flag to indicate this is a cloned SlideMaster.
+     * Used to prevent loading source document's layout references.
+     */
+    protected bool $isCloned = false;
+
+    /**
+     * Original theme target path (preserved during clone for re-linking).
+     */
+    protected ?string $originalThemeTarget = null;
+
+    /**
+     * Clone handler - mark as cloned to prevent cross-master layout conflicts.
+     *
+     * When a SlideMaster is cloned for merging, mapResources() would read
+     * from the SOURCE document's .rels file and load layout references
+     * that belong to OTHER masters in the destination.
+     *
+     * By clearing resources and marking as cloned, we prevent this.
+     * New layouts will be added via registerSlideLayoutsWithMaster().
+     */
+    public function __clone()
+    {
+        // Before clearing, save the Theme reference path for later re-linking
+        foreach ($this->resources as $resource) {
+            if ($resource instanceof Theme) {
+                $this->originalThemeTarget = $resource->getTarget();
+                break;
+            }
+        }
+
+        // Clear the resources array to prevent source layout references
+        $this->resources = [];
+
+        // CRITICAL: Clear the sldLayoutIdLst in the XML content
+        // Otherwise the old layout references remain and new ones are duplicated
+        $this->clearSldLayoutIdLst();
+
+        // Mark as cloned so mapResources() won't re-read from source
+        $this->isCloned = true;
+
+        // Mark as changed so save() will regenerate the .rels file
+        $this->hasChange = true;
+    }
+
+    /**
+     * Get the original Theme target path before cloning.
+     * Used by updateSlideMasterThemeReference() to find the cloned Theme.
+     */
+    public function getOriginalThemeTarget(): ?string
+    {
+        return $this->originalThemeTarget;
+    }
+
+    /**
+     * Override mapResources to prevent loading source document's layouts for cloned masters.
+     */
+    protected function mapResources(): void
+    {
+        // If this is a cloned SlideMaster and resources were already cleared,
+        // don't re-read from the source document's .rels file
+        if ($this->isCloned) {
+            return;
+        }
+
+        parent::mapResources();
+    }
+
+    /**
      * Add a resource to the SlideMaster.
      *
      * When adding a SlideLayout, this method also updates the <p:sldLayoutIdLst>
@@ -32,6 +100,33 @@ class SlideMaster extends XmlResource
         }
 
         return $rId;
+    }
+
+    /**
+     * Clear all entries from the <p:sldLayoutIdLst> element in the XML content.
+     * Called during clone to prevent duplicate layout references.
+     */
+    protected function clearSldLayoutIdLst(): void
+    {
+        $xml = $this->getXmlContent();
+        $namespaces = $xml->getNamespaces(true);
+
+        $pNs = $namespaces['p'] ?? 'http://schemas.openxmlformats.org/presentationml/2006/main';
+        $xml->registerXPathNamespace('p', $pNs);
+
+        $sldLayoutIdLst = $xml->xpath('//p:sldLayoutIdLst');
+
+        if (empty($sldLayoutIdLst)) {
+            return;
+        }
+
+        $layoutIdList = $sldLayoutIdLst[0];
+
+        // Remove all child elements (sldLayoutId entries)
+        $dom = dom_import_simplexml($layoutIdList);
+        while ($dom->firstChild) {
+            $dom->removeChild($dom->firstChild);
+        }
     }
 
     /**
