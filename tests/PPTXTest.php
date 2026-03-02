@@ -39,15 +39,22 @@ class PPTXTest extends TestCase
     {
         $nbSourceSlides = count($this->pptx->getSlides());
 
-        $pptxToAppend = new PPTX(__DIR__ . '/mock/aquitaine.pptx');
+        $slidesAppened = 0;
+
+        $pptxToAppend = new PPTX(__DIR__ . '/mock/FIN.pptx');
         $this->pptx->addSlides($pptxToAppend->getSlides());
+        $slidesAppened += count($pptxToAppend->getSlides());
+
+        $pptxToAppend2 = new PPTX(__DIR__ . '/mock/MILIEU.pptx');
+        $this->pptx->addSlides($pptxToAppend2->getSlides());
+        $slidesAppened += count($pptxToAppend2->getSlides());
 
         $this->pptx->saveAs(self::TMP_PATH . '/merge.pptx');
 
         $mergedPPTX = new PPTX(self::TMP_PATH . '/merge.pptx');
 
         $this->assertEquals(
-            $nbSourceSlides + count($pptxToAppend->getSlides()),
+            $nbSourceSlides + $slidesAppened,
             count($mergedPPTX->getSlides())
         );
     }
@@ -212,7 +219,7 @@ class PPTXTest extends TestCase
 
         // Filter out non-critical errors for display
         $criticalErrors = array_filter($report['errors'], function ($error) {
-            return in_array($error['severity'], ['CRITICAL', 'HIGH']);
+            return in_array($error['severity'], ['CRITICAL', 'HIGH'], true);
         });
 
         $this->assertTrue(
@@ -352,6 +359,7 @@ class PPTXTest extends TestCase
 
         if ($result === true) {
             $zip->close();
+
             return true;
         }
 
@@ -376,11 +384,13 @@ class PPTXTest extends TestCase
         foreach ($essentialFiles as $file) {
             if ($zip->locateName($file) === false) {
                 $zip->close();
+
                 return false;
             }
         }
 
         $zip->close();
+
         return true;
     }
 

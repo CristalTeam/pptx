@@ -130,6 +130,7 @@ class Comment extends XmlResource
         if ($domNode->parentNode !== null) {
             $domNode->parentNode->removeChild($domNode);
             $this->save();
+
             return true;
         }
 

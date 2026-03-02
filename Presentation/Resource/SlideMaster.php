@@ -195,6 +195,7 @@ class SlideMaster extends XmlResource
         }
 
         sort($types);
+
         return $types;
     }
 }

@@ -86,7 +86,7 @@ class GenericResource implements ResourceInterface
                 )
             );
         }
-        
+
         return $content;
     }
 

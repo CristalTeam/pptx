@@ -181,7 +181,7 @@ class Presentation extends XmlResource
             if (!isset($sections[$sectionName])) {
                 $sections[$sectionName] = [
                     'guid' => $sectionGuid,
-                    'slideIds' => []
+                    'slideIds' => [],
                 ];
             }
 
@@ -279,7 +279,7 @@ class Presentation extends XmlResource
                     $slideIndex = $slideIdToIndex[$slideId];
                     $existingSections[$slideIndex] = [
                         'name' => $sectionName,
-                        'id' => $sectionGuid
+                        'id' => $sectionGuid,
                     ];
                 }
             }
@@ -333,7 +333,7 @@ class Presentation extends XmlResource
                 'name' => 'Section par défaut',
                 'guid' => '{D57B21AD-B6CD-49C4-8F21-F21D0058913F}',
                 'slideIds' => $orphanedSlideIds,
-                'order' => $sectionOrder++
+                'order' => $sectionOrder++,
             ];
         }
 
@@ -356,7 +356,7 @@ class Presentation extends XmlResource
                     'name' => $sectionName,
                     'guid' => $sectionGuid,
                     'slideIds' => [],
-                    'order' => $sectionOrder++
+                    'order' => $sectionOrder++,
                 ];
             }
 
@@ -368,7 +368,7 @@ class Presentation extends XmlResource
         }
 
         // Sort sections by order to preserve original ordering (default section first)
-        uasort($sections, fn($a, $b) => $a['order'] <=> $b['order']);
+        uasort($sections, fn ($a, $b) => $a['order'] <=> $b['order']);
 
         // Remove old sections
         $this->removeSections();
@@ -420,21 +420,21 @@ class Presentation extends XmlResource
     {
         // Register p14 namespace
         $this->content->registerXPathNamespace('p14', 'http://schemas.microsoft.com/office/powerpoint/2010/main');
-        
+
         // Find existing sectionLst in extLst
         $sectionLst = $this->content->xpath('//p14:sectionLst');
-        
+
         if (empty($sectionLst)) {
             // No sections exist yet - we need to create extLst and sectionLst
             // This is complex - for now we'll just skip if no sections exist
             return;
         }
-        
+
         $sectionLst = $sectionLst[0];
-        
+
         // Find section by name
         $existingSection = $sectionLst->xpath("p14:section[@name='$sectionName']");
-        
+
         if (!empty($existingSection)) {
             // Section exists - add slide ID to it
             $section = $existingSection[0];
@@ -443,11 +443,11 @@ class Presentation extends XmlResource
             $section = $sectionLst->addChild('section', null, 'http://schemas.microsoft.com/office/powerpoint/2010/main');
             $section->addAttribute('name', $sectionName);
             $section->addAttribute('id', $sectionGuid);
-            
+
             // Add sldIdLst to section
             $section->addChild('sldIdLst', null, 'http://schemas.microsoft.com/office/powerpoint/2010/main');
         }
-        
+
         // Add slide ID to section's sldIdLst
         $sldIdLst = $section->xpath('p14:sldIdLst');
         if (!empty($sldIdLst)) {
@@ -489,7 +489,7 @@ class Presentation extends XmlResource
         foreach ($slideRIds as $existingId) {
             if ($existingId == $nextId && !in_array($nextId, $allUsedIds, true)) {
                 $nextId++;
-            } else if (in_array($nextId, $allUsedIds, true)) {
+            } elseif (in_array($nextId, $allUsedIds, true)) {
                 // This rId is used by another resource, skip it
                 $nextId++;
             } else {
@@ -586,6 +586,7 @@ class Presentation extends XmlResource
         usort($slideData, function ($a, $b) {
             $numA = (int) preg_replace('/[^0-9]/', '', $a['rId']);
             $numB = (int) preg_replace('/[^0-9]/', '', $b['rId']);
+
             return $numA <=> $numB;
         });
 
@@ -630,6 +631,7 @@ class Presentation extends XmlResource
         usort($masterData, function ($a, $b) {
             $numA = (int) preg_replace('/[^0-9]/', '', $a['rId']);
             $numB = (int) preg_replace('/[^0-9]/', '', $b['rId']);
+
             return $numA <=> $numB;
         });
 

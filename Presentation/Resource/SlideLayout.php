@@ -19,10 +19,10 @@ class SlideLayout extends XmlResource
     {
         $xml = $this->getXmlContent();
         $type = (string)$xml['type'];
-        
+
         return $type !== '' ? $type : null;
     }
-    
+
     /**
      * Get the SlideMaster this layout belongs to.
      *
@@ -35,7 +35,7 @@ class SlideLayout extends XmlResource
                 return $resource;
             }
         }
-        
+
         return null;
     }
 }

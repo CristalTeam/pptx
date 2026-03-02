@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Cristal\Presentation\Validator;
 
 use ZipArchive;
-use SimpleXMLElement;
 
 /**
  * OPC (Open Packaging Conventions) validator for PPTX files.

@@ -51,7 +51,7 @@ class XmlResource extends GenericResource
         parent::__construct($target, $relType, $contentType, $document);
 
         $originalContent = $this->document->getArchive()->getFromName($this->getInitialTarget());
-        if($originalContent) {
+        if ($originalContent) {
             $this->setContent($originalContent);
             $this->originalContent = $originalContent;
             $this->namespaces = $this->content->getNamespaces(true);
@@ -212,11 +212,11 @@ class XmlResource extends GenericResource
     {
         $relsPath = $this->getRelsName();
         $content = $this->document->getArchive()->getFromName($relsPath);
-        
+
         if (!$content) {
             return [];
         }
-        
+
         $ids = [];
         try {
             $xml = new SimpleXMLElement($content, LIBXML_NOWARNING);
@@ -229,7 +229,7 @@ class XmlResource extends GenericResource
         } catch (\Exception $e) {
             // If parsing fails, return empty array
         }
-        
+
         return $ids;
     }
 

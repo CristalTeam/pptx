@@ -12,5 +12,6 @@ class SanitizeIssue
         public readonly string $ruleName,
         public readonly bool $repaired = false,
         public readonly array $details = [],
-    ) {}
+    ) {
+    }
 }

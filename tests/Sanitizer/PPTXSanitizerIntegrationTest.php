@@ -106,8 +106,8 @@ class PPTXSanitizerIntegrationTest extends TestCase
 
         if ($remainingCritical > 0) {
             $remainingMessages = implode(', ', array_map(
-                fn($i) => $i->message,
-                array_filter($verifyReport->getIssues(), fn($i) => $i->severity === Severity::CRITICAL)
+                fn ($i) => $i->message,
+                array_filter($verifyReport->getIssues(), fn ($i) => $i->severity === Severity::CRITICAL)
             ));
             $this->markTestIncomplete(
                 "After repair, $remainingCritical CRITICAL issue(s) remain unresolved: $remainingMessages"
@@ -145,8 +145,8 @@ class PPTXSanitizerIntegrationTest extends TestCase
 
         if ($criticalCount > 0) {
             $criticalMessages = implode(', ', array_map(
-                fn($i) => $i->message,
-                array_filter($report->getIssues(), fn($i) => $i->severity === Severity::CRITICAL)
+                fn ($i) => $i->message,
+                array_filter($report->getIssues(), fn ($i) => $i->severity === Severity::CRITICAL)
             ));
             $this->markTestSkipped(
                 "PropaleRepaired.pptx has $criticalCount CRITICAL issue(s) that PowerPoint repaired differently "

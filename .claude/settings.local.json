@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vendor/bin/phpunit:*)",
+      "Bash(php:*)",
+      "Bash(unzip:*)",
+      "Bash(./vendor/bin/phpunit:*)",
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "Bash(sort:*)",
+      "Bash(echo === FAILED: Layout -> Master references ===:*)",
+      "Bash(echo)",
+      "Bash(vendor/bin/phpstan analyse:*)",
+      "Bash(vendor/bin/php-cs-fixer fix:*)"
+    ]
+  }
+}

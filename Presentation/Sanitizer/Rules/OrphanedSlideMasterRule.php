@@ -185,6 +185,7 @@ class OrphanedSlideMasterRule implements SanitizeRule
                 $resolved[] = $part;
             }
         }
+
         return implode('/', $resolved);
     }
 }

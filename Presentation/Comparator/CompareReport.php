@@ -36,13 +36,25 @@ class CompareReport
     }
 
     /** @return array<string, int> */
-    public function getAddedFiles(): array { return $this->addedFiles; }
+    public function getAddedFiles(): array
+    {
+        return $this->addedFiles;
+    }
     /** @return array<string, int> */
-    public function getRemovedFiles(): array { return $this->removedFiles; }
+    public function getRemovedFiles(): array
+    {
+        return $this->removedFiles;
+    }
     /** @return array<string, mixed> */
-    public function getModifiedFiles(): array { return $this->modifiedFiles; }
+    public function getModifiedFiles(): array
+    {
+        return $this->modifiedFiles;
+    }
     /** @return array<string, mixed> */
-    public function getRIdChanges(): array { return $this->rIdChanges; }
+    public function getRIdChanges(): array
+    {
+        return $this->rIdChanges;
+    }
 
     public function hasDifferences(): bool
     {

@@ -62,6 +62,7 @@ class PPTXComparator
             $stat = $zip->statIndex($i);
             $files[$stat['name']] = $stat['size'];
         }
+
         return $files;
     }
 
@@ -104,6 +105,7 @@ class PPTXComparator
         foreach ($dom->xpath('//r:Relationship') as $rel) {
             $map[(string) $rel['Id']] = (string) $rel['Target'];
         }
+
         return $map;
     }
 }

@@ -283,9 +283,10 @@ class ContentType extends GenericResource
                     }
                 }
             }
+
             return null;
         }
-        
+
         // For SlideMasters: compare by layout types signature
         // SlideMasters with the same set of layout types are considered equivalent
         if ($originalResource instanceof SlideMaster) {
@@ -300,9 +301,10 @@ class ContentType extends GenericResource
                     }
                 }
             }
+
             return null;
         }
-        
+
         // For NoteMasters: always reuse the first one found
         // PowerPoint presentations typically have only one NoteMaster
         // and they are functionally equivalent across merged presentations
@@ -316,9 +318,10 @@ class ContentType extends GenericResource
                     }
                 }
             }
+
             return null;
         }
-        
+
         // For Themes: compare by content hash
         // Different themes should NOT be reused even if they're the same type
         if ($originalResource instanceof Theme) {
@@ -332,14 +335,15 @@ class ContentType extends GenericResource
                     }
                 }
             }
+
             return null;
         }
-        
+
         // For other resources (images, media, etc.): compare by content hash
         // This enables deduplication of identical media files during merge operations
         $originalHash = $originalResource->getHashFile();
         $startBy = dirname($originalResource->getTarget()) . '/';
-        
+
         foreach ($this->cachedFilename as $path) {
             if (str_starts_with($path, $startBy) && dirname($path) . '/' === $startBy) {
                 $existingFile = $this->getResource($path, $originalResource->getRelType(), false, true);
@@ -451,10 +455,10 @@ class ContentType extends GenericResource
     public function removeResource(string $path): void
     {
         $partName = '/' . ltrim($path, '/');
-        
+
         // Remove from overrides array
         unset($this->overrides[ltrim($path, '/')]);
-        
+
         // Remove from XML
         $toRemove = [];
         $index = 0;
@@ -464,17 +468,17 @@ class ContentType extends GenericResource
             }
             $index++;
         }
-        
+
         // Remove in reverse order to maintain indices
         foreach (array_reverse($toRemove) as $idx) {
             unset($this->content->Override[$idx]);
         }
-        
+
         // Remove from cached filename
-        $this->cachedFilename = array_filter($this->cachedFilename, function($name) use ($path) {
+        $this->cachedFilename = array_filter($this->cachedFilename, function ($name) use ($path) {
             return $name !== $path && $name !== './' . $path;
         });
-        
+
         // Remove from cache (array only, LRU cache doesn't need removal for this use case)
         if (!$this->useLRUCache) {
             unset($this->cachedResources[$path]);
@@ -491,29 +495,30 @@ class ContentType extends GenericResource
     {
         $oldPartName = '/' . ltrim($oldPath, '/');
         $newPartName = '/' . ltrim($newPath, '/');
-        
+
         // Update in overrides array
         if (isset($this->overrides[ltrim($oldPath, '/')])) {
             $contentType = $this->overrides[ltrim($oldPath, '/')];
             unset($this->overrides[ltrim($oldPath, '/')]);
             $this->overrides[ltrim($newPath, '/')] = $contentType;
         }
-        
+
         // Update in XML
         foreach ($this->content->Override as $override) {
             if ((string)$override['PartName'] === $oldPartName) {
                 $override['PartName'] = $newPartName;
             }
         }
-        
+
         // Update cached filename
-        $this->cachedFilename = array_map(function($name) use ($oldPath, $newPath) {
+        $this->cachedFilename = array_map(function ($name) use ($oldPath, $newPath) {
             if ($name === $oldPath || $name === './' . $oldPath) {
                 return $newPath;
             }
+
             return $name;
         }, $this->cachedFilename);
-        
+
         // Update cache (array only, LRU cache will handle stale entries naturally)
         if (!$this->useLRUCache) {
             if (isset($this->cachedResources[$oldPath])) {

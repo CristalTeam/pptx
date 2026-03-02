@@ -55,7 +55,7 @@ class UniqueRIdRule implements SanitizeRule
             if (count($offsets) > 1) {
                 $issues[] = new SanitizeIssue(
                     Severity::CRITICAL,
-                    "Duplicate rId '$rId' used " . count($offsets) . " times in presentation.xml",
+                    "Duplicate rId '$rId' used " . count($offsets) . ' times in presentation.xml',
                     $this->name(),
                     details: ['rId' => $rId, 'count' => count($offsets)],
                 );

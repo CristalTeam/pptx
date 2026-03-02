@@ -6,7 +6,6 @@ namespace Cristal\Presentation\Tests\Sanitizer;
 
 use Cristal\Presentation\Sanitizer\PPTXSanitizer;
 use Cristal\Presentation\Sanitizer\SanitizeIssue;
-use Cristal\Presentation\Sanitizer\SanitizeReport;
 use Cristal\Presentation\Sanitizer\SanitizeRule;
 use Cristal\Presentation\Sanitizer\Severity;
 use PHPUnit\Framework\TestCase;

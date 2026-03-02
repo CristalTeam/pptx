@@ -25,13 +25,13 @@ use Cristal\Presentation\Resource\SvgImage;
 use Cristal\Presentation\Resource\Theme;
 use Cristal\Presentation\Resource\Video;
 use Cristal\Presentation\Resource\XmlResource;
-use Cristal\Presentation\Stats\OptimizationStats;
-use Cristal\Presentation\Validator\ImageValidator;
 use Cristal\Presentation\Sanitizer\PPTXSanitizer;
-use Cristal\Presentation\Sanitizer\SanitizeReport;
-use Cristal\Presentation\Sanitizer\Rules\UniqueRIdRule;
 use Cristal\Presentation\Sanitizer\Rules\AllRIdsResolveRule;
 use Cristal\Presentation\Sanitizer\Rules\OrphanedSlideMasterRule;
+use Cristal\Presentation\Sanitizer\Rules\UniqueRIdRule;
+use Cristal\Presentation\Sanitizer\SanitizeReport;
+use Cristal\Presentation\Stats\OptimizationStats;
+use Cristal\Presentation\Validator\ImageValidator;
 use Cristal\Presentation\Validator\PresentationValidator;
 use Exception;
 use ZipArchive;
@@ -128,7 +128,7 @@ class PPTX
     protected function loadSlides(): self
     {
         $this->slides = [];
-        
+
         // Build a map of slideId -> section info
         $slideSections = $this->extractSlideSections();
 
@@ -159,17 +159,17 @@ class PPTX
     {
         $slideSections = [];
         $xml = $this->presentation->getXmlContent();
-        
+
         // Register namespaces for sections (Office 2010+)
         $xml->registerXPathNamespace('p14', 'http://schemas.microsoft.com/office/powerpoint/2010/main');
-        
+
         // Find sectionLst in extLst
         $sections = $xml->xpath('//p14:sectionLst/p14:section');
-        
+
         foreach ($sections as $section) {
             $sectionName = (string) $section['name'];
             $sectionId = (string) $section['id'];
-            
+
             // Get all slide IDs in this section
             foreach ($section->xpath('p14:sldIdLst/p14:sldId') as $sldId) {
                 $slideId = (int) $sldId['id'];
@@ -179,7 +179,7 @@ class PPTX
                 ];
             }
         }
-        
+
         return $slideSections;
     }
 
@@ -235,7 +235,7 @@ class PPTX
 
         /** @var array<string, ResourceInterface> $clonedResources */
         $clonedResources = [];
-        
+
         /** @var array<string, ResourceInterface> $resourceMapping */
         $resourceMapping = [];
 
@@ -247,7 +247,7 @@ class PPTX
             // Map old target to new resource (for reference updates)
             $resourceMapping[$originalResource->getTarget()] = $newResource;
         }
-        
+
         // Synchronize NoteSlide numbering with their parent Slide
         $this->synchronizeNoteSlideNumbering($clonedResources, $res);
 
@@ -262,7 +262,7 @@ class PPTX
 
         return $clonedResources;
     }
-    
+
     /**
      * Synchronize NoteSlide references.
      *
@@ -307,6 +307,7 @@ class PPTX
                         if ($this->config->isEnabled('collect_stats')) {
                             $this->stats->recordDeduplication();
                         }
+
                         return $duplicate;
                     }
                 }
@@ -318,6 +319,7 @@ class PPTX
                     if ($existingResource instanceof Image) {
                         $this->imageCache->registerWithContent($existingResource->getContent(), $existingResource);
                     }
+
                     return $existingResource;
                 }
             }
@@ -331,7 +333,7 @@ class PPTX
                 if (!$originalResource instanceof XmlResource) {
                     return $existingResource;
                 }
-                
+
                 // For XmlResource, reuse structural resources (SlideMasters, NoteMasters)
                 // OR SlideLayouts and Themes found by content hash comparison
                 if ($this->shouldReuseXmlResource($originalResource)
@@ -868,14 +870,14 @@ class PPTX
     {
         // Check if this resource is already in presentation's resources
         $presentationResources = $this->presentation->getResources();
-        
+
         foreach ($presentationResources as $existingResource) {
             if ($existingResource instanceof GenericResource &&
                 $existingResource->getTarget() === $resource->getTarget()) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -1094,6 +1096,7 @@ class PPTX
                         $this->getResourceTree($subResource, $resourceList, $forceCloneTargets);
                     }
                 }
+
                 return $resourceList;
             }
 
@@ -1212,10 +1215,14 @@ class PPTX
      */
     protected function getSanitizeRules(): array
     {
+        // OrphanedSlideMasterRule is NOT included here: its repair() only removes
+        // the master from sldMasterIdLst but leaves its layouts intact, creating
+        // UNDECLARED_MASTER validation errors. Orphaned masters (in sldMasterIdLst
+        // but unused by slides) are benign in PowerPoint — detection is available
+        // but auto-repair requires full cleanup of related layouts (future work).
         return [
             new UniqueRIdRule(),
             new AllRIdsResolveRule(),
-            new OrphanedSlideMasterRule(),
         ];
     }
 
@@ -1267,6 +1274,7 @@ class PPTX
         uasort($slides, function ($a, $b) {
             $numA = (int) preg_replace('/[^0-9]/', '', basename($a->getTarget()));
             $numB = (int) preg_replace('/[^0-9]/', '', basename($b->getTarget()));
+
             return $numA <=> $numB;
         });
 
@@ -1301,11 +1309,11 @@ class PPTX
             $this->removeFromContentTypes($revisionInfo);
             $this->removeRevisionInfoFromPresentationRels();
         }*/
-        
+
         // Clean orphaned media files
         $this->cleanOrphanedMedia();
     }
-    
+
     /**
      * Remove media files that are not referenced in any .rels file.
      */
@@ -1344,7 +1352,7 @@ class PPTX
                 }
             }
         }
-        
+
         // Remove unreferenced media
         foreach ($mediaFiles as $mediaPath => $unused) {
             if (!isset($referencedMedia[$mediaPath])) {
@@ -1352,7 +1360,7 @@ class PPTX
             }
         }
     }
-    
+
     /**
      * Resolve a relative target path from a .rels file to an absolute path.
      *
@@ -1366,12 +1374,12 @@ class PPTX
         if (str_starts_with($target, 'http://') || str_starts_with($target, 'https://')) {
             return null;
         }
-        
+
         // Handle absolute paths
         if (str_starts_with($target, '/')) {
             return ltrim($target, '/');
         }
-        
+
         // Resolve relative path
         $parts = explode('/', $baseDir . '/' . $target);
         $resolved = [];
@@ -1382,10 +1390,10 @@ class PPTX
                 $resolved[] = $part;
             }
         }
-        
+
         return implode('/', $resolved);
     }
-    
+
     /**
      * Remove revisionInfo relationship from presentation.xml.rels.
      */
@@ -1396,23 +1404,23 @@ class PPTX
         if ($relsContent === false) {
             return;
         }
-        
+
         $xml = new \SimpleXMLElement($relsContent);
-        
+
         // Register namespace for XPath
         $xml->registerXPathNamespace('r', 'http://schemas.openxmlformats.org/package/2006/relationships');
-        
+
         // Find and remove revisionInfo relationship
         $relationships = $xml->xpath("//r:Relationship[contains(@Type, 'revisionInfo')]");
         foreach ($relationships as $rel) {
             $dom = dom_import_simplexml($rel);
             $dom->parentNode->removeChild($dom);
         }
-        
+
         // Save updated rels file
         $this->archive->addFromString($relsPath, $xml->asXML());
     }
-    
+
     /**
      * Remove a file from [Content_Types].xml overrides.
      */
@@ -1431,24 +1439,24 @@ class PPTX
         $xml = $this->presentation->getXmlContent();
         $xml->registerXPathNamespace('p', 'http://schemas.openxmlformats.org/presentationml/2006/main');
         $xml->registerXPathNamespace('p14', 'http://schemas.microsoft.com/office/powerpoint/2010/main');
-        
+
         // Build mapping of old ID -> new ID
         $idMapping = [];
         $slides = $xml->xpath('//p:sldIdLst/p:sldId');
-        
+
         foreach ($slides as $index => $slide) {
             $oldId = (int) $slide['id'];
             $newId = 256 + $index;
             $idMapping[$oldId] = $newId;
             $slide['id'] = (string)$newId;
         }
-        
+
         // Update section IDs using the mapping
         $this->updateSectionSlideIds($xml, $idMapping);
-        
+
         $this->presentation->save();
     }
-    
+
     /**
      * Update slide IDs in section list to match the new sequential IDs.
      *
@@ -1458,10 +1466,10 @@ class PPTX
     protected function updateSectionSlideIds(\SimpleXMLElement $xml, array $idMapping): void
     {
         $sections = $xml->xpath('//p14:sectionLst/p14:section');
-        
+
         foreach ($sections as $section) {
             $sldIds = $section->xpath('p14:sldIdLst/p14:sldId');
-            
+
             foreach ($sldIds as $sldId) {
                 $oldId = (int) $sldId['id'];
                 if (isset($idMapping[$oldId])) {
@@ -1478,12 +1486,12 @@ class PPTX
     {
         try {
             $appProps = $this->contentType->getResource('docProps/app.xml');
-            
+
             if ($appProps instanceof AppProperties) {
                 // Count slides
                 $slideCount = count($this->slides);
                 $appProps->updateSlideCount($slideCount);
-                
+
                 // Count notes
                 $notesCount = 0;
                 foreach ($this->slides as $slide) {
@@ -1495,7 +1503,7 @@ class PPTX
                     }
                 }
                 $appProps->updateNotesCount($notesCount);
-                
+
                 $appProps->save();
             }
         } catch (\Exception $e) {

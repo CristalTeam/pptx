@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Cristal\Presentation\Tests\Sanitizer\Rules;
 
 use Cristal\Presentation\Sanitizer\Rules\OrphanedSlideMasterRule;
-use Cristal\Presentation\Sanitizer\Severity;
 use PHPUnit\Framework\TestCase;
 use ZipArchive;
 

@@ -1,0 +1,1374 @@
+{
+  "corrupt_issues": [],
+  "repaired_issues": [],
+  "diffs": [
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/_rels/slideLayout16.xml.rels",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/_rels/slideLayout16.xml.rels"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/_rels/slideLayout17.xml.rels",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/_rels/slideLayout17.xml.rels"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/_rels/slideLayout18.xml.rels",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/_rels/slideLayout18.xml.rels"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/slideLayout16.xml",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/slideLayout16.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/_rels/slideLayout15.xml.rels",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/_rels/slideLayout15.xml.rels"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/_rels/slideLayout23.xml.rels",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/_rels/slideLayout23.xml.rels"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/slideLayout17.xml",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/slideLayout17.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/_rels/slideLayout22.xml.rels",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/_rels/slideLayout22.xml.rels"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/slideLayout14.xml",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/slideLayout14.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/media/image27.svg",
+      "msg": "File in corrupt but removed by repair: ppt/media/image27.svg"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/media/image26.png",
+      "msg": "File in corrupt but removed by repair: ppt/media/image26.png"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/slideLayout15.xml",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/slideLayout15.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/slideLayout18.xml",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/slideLayout18.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/slideLayout20.xml",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/slideLayout20.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/_rels/slideLayout20.xml.rels",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/_rels/slideLayout20.xml.rels"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/slideLayout22.xml",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/slideLayout22.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideMasters/slideMaster4.xml",
+      "msg": "File in corrupt but removed by repair: ppt/slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/_rels/slideLayout21.xml.rels",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/_rels/slideLayout21.xml.rels"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/slideLayout21.xml",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/slideLayout21.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/_rels/slideLayout19.xml.rels",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/_rels/slideLayout19.xml.rels"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/slideLayout19.xml",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/slideLayout19.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideMasters/_rels/slideMaster4.xml.rels",
+      "msg": "File in corrupt but removed by repair: ppt/slideMasters/_rels/slideMaster4.xml.rels"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/slideLayout23.xml",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/slideLayout23.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/theme/theme5.xml",
+      "msg": "File in corrupt but removed by repair: ppt/theme/theme5.xml"
+    },
+    {
+      "type": "FILE_REMOVED",
+      "severity": "HIGH",
+      "file": "ppt/slideLayouts/_rels/slideLayout14.xml.rels",
+      "msg": "File in corrupt but removed by repair: ppt/slideLayouts/_rels/slideLayout14.xml.rels"
+    },
+    {
+      "type": "FILE_ADDED",
+      "severity": "MEDIUM",
+      "file": "ppt/media/image27.png",
+      "msg": "File added by repair: ppt/media/image27.png"
+    },
+    {
+      "type": "FILE_ADDED",
+      "severity": "MEDIUM",
+      "file": "ppt/media/image26.svg",
+      "msg": "File added by repair: ppt/media/image26.svg"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/slideMasters/slideMaster4.xml",
+      "msg": "Content type override removed: ppt/slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/slideLayouts/slideLayout14.xml",
+      "msg": "Content type override removed: ppt/slideLayouts/slideLayout14.xml"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/slideLayouts/slideLayout15.xml",
+      "msg": "Content type override removed: ppt/slideLayouts/slideLayout15.xml"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/slideLayouts/slideLayout16.xml",
+      "msg": "Content type override removed: ppt/slideLayouts/slideLayout16.xml"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/theme/theme5.xml",
+      "msg": "Content type override removed: ppt/theme/theme5.xml"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/slideLayouts/slideLayout17.xml",
+      "msg": "Content type override removed: ppt/slideLayouts/slideLayout17.xml"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/slideLayouts/slideLayout18.xml",
+      "msg": "Content type override removed: ppt/slideLayouts/slideLayout18.xml"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/slideLayouts/slideLayout19.xml",
+      "msg": "Content type override removed: ppt/slideLayouts/slideLayout19.xml"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/slideLayouts/slideLayout20.xml",
+      "msg": "Content type override removed: ppt/slideLayouts/slideLayout20.xml"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/slideLayouts/slideLayout21.xml",
+      "msg": "Content type override removed: ppt/slideLayouts/slideLayout21.xml"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/slideLayouts/slideLayout22.xml",
+      "msg": "Content type override removed: ppt/slideLayouts/slideLayout22.xml"
+    },
+    {
+      "type": "CONTENT_TYPE_REMOVED",
+      "severity": "HIGH",
+      "part": "ppt/slideLayouts/slideLayout23.xml",
+      "msg": "Content type override removed: ppt/slideLayouts/slideLayout23.xml"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide3.xml",
+      "rid": "rId7",
+      "corrupt_target": "../media/image21.png",
+      "repaired_target": "../media/image24.png",
+      "msg": "Relation target changed: ppt/slides/slide3.xml rId7"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide3.xml",
+      "rid": "rId6",
+      "corrupt_target": "../media/image22.png",
+      "repaired_target": "../media/image23.png",
+      "msg": "Relation target changed: ppt/slides/slide3.xml rId6"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide3.xml",
+      "rid": "rId5",
+      "corrupt_target": "../media/image23.png",
+      "repaired_target": "../media/image22.png",
+      "msg": "Relation target changed: ppt/slides/slide3.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide3.xml",
+      "rid": "rId4",
+      "corrupt_target": "../media/image24.png",
+      "repaired_target": "../media/image21.png",
+      "msg": "Relation target changed: ppt/slides/slide3.xml rId4"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide6.xml",
+      "rid": "rId8",
+      "corrupt_target": "../media/image25.png",
+      "repaired_target": "../media/image28.png",
+      "msg": "Relation target changed: ppt/slides/slide6.xml rId8"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide6.xml",
+      "rid": "rId7",
+      "corrupt_target": "../media/image26.png",
+      "repaired_target": "../media/image27.png",
+      "msg": "Relation target changed: ppt/slides/slide6.xml rId7"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide6.xml",
+      "rid": "rId5",
+      "corrupt_target": "../media/image27.svg",
+      "repaired_target": "../media/image26.svg",
+      "msg": "Relation target changed: ppt/slides/slide6.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide6.xml",
+      "rid": "rId4",
+      "corrupt_target": "../media/image28.png",
+      "repaired_target": "../media/image25.png",
+      "msg": "Relation target changed: ppt/slides/slide6.xml rId4"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideLayouts/slideLayout15.xml",
+      "rid": "rId1",
+      "target": "../slideMasters/slideMaster4.xml",
+      "msg": "Relation removed: ppt/slideLayouts/slideLayout15.xml rId1 -> ../slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideLayouts/slideLayout22.xml",
+      "rid": "rId1",
+      "target": "../slideMasters/slideMaster4.xml",
+      "msg": "Relation removed: ppt/slideLayouts/slideLayout22.xml rId1 -> ../slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster3.xml",
+      "rid": "rId8",
+      "corrupt_target": "../media/image18.png",
+      "repaired_target": "../theme/theme3.xml",
+      "msg": "Relation target changed: ppt/slideMasters/slideMaster3.xml rId8"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster3.xml",
+      "rid": "rId7",
+      "corrupt_target": "../theme/theme3.xml",
+      "repaired_target": "../slideLayouts/slideLayout13.xml",
+      "msg": "Relation target changed: ppt/slideMasters/slideMaster3.xml rId7"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide12.xml",
+      "rid": "rId8",
+      "corrupt_target": "../media/image25.png",
+      "repaired_target": "../media/image28.png",
+      "msg": "Relation target changed: ppt/slides/slide12.xml rId8"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide12.xml",
+      "rid": "rId5",
+      "corrupt_target": "../media/image27.svg",
+      "repaired_target": "../media/image26.svg",
+      "msg": "Relation target changed: ppt/slides/slide12.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide12.xml",
+      "rid": "rId4",
+      "corrupt_target": "../media/image28.png",
+      "repaired_target": "../media/image25.png",
+      "msg": "Relation target changed: ppt/slides/slide12.xml rId4"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideLayouts/slideLayout21.xml",
+      "rid": "rId1",
+      "target": "../slideMasters/slideMaster4.xml",
+      "msg": "Relation removed: ppt/slideLayouts/slideLayout21.xml rId1 -> ../slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide7.xml",
+      "rid": "rId8",
+      "corrupt_target": "../media/image25.png",
+      "repaired_target": "../media/image28.png",
+      "msg": "Relation target changed: ppt/slides/slide7.xml rId8"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide7.xml",
+      "rid": "rId7",
+      "corrupt_target": "../media/image26.png",
+      "repaired_target": "../media/image27.png",
+      "msg": "Relation target changed: ppt/slides/slide7.xml rId7"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide7.xml",
+      "rid": "rId5",
+      "corrupt_target": "../media/image27.svg",
+      "repaired_target": "../media/image26.svg",
+      "msg": "Relation target changed: ppt/slides/slide7.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide7.xml",
+      "rid": "rId4",
+      "corrupt_target": "../media/image28.png",
+      "repaired_target": "../media/image25.png",
+      "msg": "Relation target changed: ppt/slides/slide7.xml rId4"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideLayouts/slideLayout19.xml",
+      "rid": "rId1",
+      "target": "../slideMasters/slideMaster4.xml",
+      "msg": "Relation removed: ppt/slideLayouts/slideLayout19.xml rId1 -> ../slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide4.xml",
+      "rid": "rId8",
+      "corrupt_target": "../media/image25.png",
+      "repaired_target": "../media/image28.png",
+      "msg": "Relation target changed: ppt/slides/slide4.xml rId8"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide4.xml",
+      "rid": "rId7",
+      "corrupt_target": "../media/image26.png",
+      "repaired_target": "../media/image27.png",
+      "msg": "Relation target changed: ppt/slides/slide4.xml rId7"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide4.xml",
+      "rid": "rId5",
+      "corrupt_target": "../media/image27.svg",
+      "repaired_target": "../media/image26.svg",
+      "msg": "Relation target changed: ppt/slides/slide4.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide4.xml",
+      "rid": "rId4",
+      "corrupt_target": "../media/image28.png",
+      "repaired_target": "../media/image25.png",
+      "msg": "Relation target changed: ppt/slides/slide4.xml rId4"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide9.xml",
+      "rid": "rId8",
+      "corrupt_target": "../media/image25.png",
+      "repaired_target": "../media/image28.png",
+      "msg": "Relation target changed: ppt/slides/slide9.xml rId8"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide9.xml",
+      "rid": "rId5",
+      "corrupt_target": "../media/image27.svg",
+      "repaired_target": "../media/image26.svg",
+      "msg": "Relation target changed: ppt/slides/slide9.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide9.xml",
+      "rid": "rId4",
+      "corrupt_target": "../media/image28.png",
+      "repaired_target": "../media/image25.png",
+      "msg": "Relation target changed: ppt/slides/slide9.xml rId4"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide11.xml",
+      "rid": "rId8",
+      "corrupt_target": "../media/image25.png",
+      "repaired_target": "../media/image28.png",
+      "msg": "Relation target changed: ppt/slides/slide11.xml rId8"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide11.xml",
+      "rid": "rId5",
+      "corrupt_target": "../media/image27.svg",
+      "repaired_target": "../media/image26.svg",
+      "msg": "Relation target changed: ppt/slides/slide11.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide11.xml",
+      "rid": "rId4",
+      "corrupt_target": "../media/image28.png",
+      "repaired_target": "../media/image25.png",
+      "msg": "Relation target changed: ppt/slides/slide11.xml rId4"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide13.xml",
+      "rid": "rId7",
+      "corrupt_target": "../media/image31.png",
+      "repaired_target": "../media/image34.png",
+      "msg": "Relation target changed: ppt/slides/slide13.xml rId7"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide13.xml",
+      "rid": "rId6",
+      "corrupt_target": "../media/image32.png",
+      "repaired_target": "../media/image33.png",
+      "msg": "Relation target changed: ppt/slides/slide13.xml rId6"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide13.xml",
+      "rid": "rId5",
+      "corrupt_target": "../media/image33.png",
+      "repaired_target": "../media/image32.png",
+      "msg": "Relation target changed: ppt/slides/slide13.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide13.xml",
+      "rid": "rId4",
+      "corrupt_target": "../media/image34.png",
+      "repaired_target": "../media/image31.png",
+      "msg": "Relation target changed: ppt/slides/slide13.xml rId4"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideLayouts/slideLayout16.xml",
+      "rid": "rId1",
+      "target": "../slideMasters/slideMaster4.xml",
+      "msg": "Relation removed: ppt/slideLayouts/slideLayout16.xml rId1 -> ../slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide10.xml",
+      "rid": "rId8",
+      "corrupt_target": "../media/image25.png",
+      "repaired_target": "../media/image28.png",
+      "msg": "Relation target changed: ppt/slides/slide10.xml rId8"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide10.xml",
+      "rid": "rId5",
+      "corrupt_target": "../media/image27.svg",
+      "repaired_target": "../media/image26.svg",
+      "msg": "Relation target changed: ppt/slides/slide10.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide10.xml",
+      "rid": "rId4",
+      "corrupt_target": "../media/image28.png",
+      "repaired_target": "../media/image25.png",
+      "msg": "Relation target changed: ppt/slides/slide10.xml rId4"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide8.xml",
+      "rid": "rId8",
+      "corrupt_target": "../media/image25.png",
+      "repaired_target": "../media/image28.png",
+      "msg": "Relation target changed: ppt/slides/slide8.xml rId8"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide8.xml",
+      "rid": "rId5",
+      "corrupt_target": "../media/image27.svg",
+      "repaired_target": "../media/image26.svg",
+      "msg": "Relation target changed: ppt/slides/slide8.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide8.xml",
+      "rid": "rId4",
+      "corrupt_target": "../media/image28.png",
+      "repaired_target": "../media/image25.png",
+      "msg": "Relation target changed: ppt/slides/slide8.xml rId4"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideLayouts/slideLayout17.xml",
+      "rid": "rId1",
+      "target": "../slideMasters/slideMaster4.xml",
+      "msg": "Relation removed: ppt/slideLayouts/slideLayout17.xml rId1 -> ../slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideLayouts/slideLayout14.xml",
+      "rid": "rId1",
+      "target": "../slideMasters/slideMaster4.xml",
+      "msg": "Relation removed: ppt/slideLayouts/slideLayout14.xml rId1 -> ../slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideLayouts/slideLayout18.xml",
+      "rid": "rId1",
+      "target": "../slideMasters/slideMaster4.xml",
+      "msg": "Relation removed: ppt/slideLayouts/slideLayout18.xml rId1 -> ../slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideLayouts/slideLayout20.xml",
+      "rid": "rId1",
+      "target": "../slideMasters/slideMaster4.xml",
+      "msg": "Relation removed: ppt/slideLayouts/slideLayout20.xml rId1 -> ../slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId6",
+      "corrupt_target": "slides/slide2.xml",
+      "repaired_target": "slides/slide3.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId6"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId5",
+      "corrupt_target": "slides/slide1.xml",
+      "repaired_target": "slides/slide2.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId7",
+      "corrupt_target": "slides/slide3.xml",
+      "repaired_target": "slides/slide4.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId7"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId8",
+      "corrupt_target": "slides/slide4.xml",
+      "repaired_target": "slides/slide5.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId8"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId9",
+      "corrupt_target": "slides/slide5.xml",
+      "repaired_target": "slides/slide6.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId9"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId10",
+      "corrupt_target": "slides/slide6.xml",
+      "repaired_target": "slides/slide7.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId10"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId11",
+      "corrupt_target": "slides/slide7.xml",
+      "repaired_target": "slides/slide8.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId11"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId12",
+      "corrupt_target": "slides/slide8.xml",
+      "repaired_target": "slides/slide9.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId12"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId13",
+      "corrupt_target": "slides/slide9.xml",
+      "repaired_target": "slides/slide10.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId13"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId14",
+      "corrupt_target": "slides/slide10.xml",
+      "repaired_target": "slides/slide11.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId14"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId15",
+      "corrupt_target": "slides/slide11.xml",
+      "repaired_target": "slides/slide12.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId15"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId16",
+      "corrupt_target": "slides/slide12.xml",
+      "repaired_target": "slides/slide13.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId16"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId17",
+      "corrupt_target": "slides/slide13.xml",
+      "repaired_target": "notesMasters/notesMaster1.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId17"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId1",
+      "corrupt_target": "slideMasters/slideMaster3.xml",
+      "repaired_target": "slideMasters/slideMaster1.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId1"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId3",
+      "corrupt_target": "slideMasters/slideMaster1.xml",
+      "repaired_target": "slideMasters/slideMaster3.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId3"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId4",
+      "corrupt_target": "slideMasters/slideMaster4.xml",
+      "repaired_target": "slides/slide1.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId4"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId18",
+      "corrupt_target": "theme/theme1.xml",
+      "repaired_target": "presProps.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId18"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId20",
+      "corrupt_target": "presProps.xml",
+      "repaired_target": "theme/theme1.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId20"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId21",
+      "corrupt_target": "revisionInfo.xml",
+      "repaired_target": "tableStyles.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId21"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId22",
+      "corrupt_target": "tableStyles.xml",
+      "repaired_target": "revisionInfo.xml",
+      "msg": "Relation target changed: ppt/presentation.xml rId22"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId23",
+      "target": "notesMasters/notesMaster1.xml",
+      "msg": "Relation removed: ppt/presentation.xml rId23 -> notesMasters/notesMaster1.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId24",
+      "target": "theme/theme4.xml",
+      "msg": "Relation removed: ppt/presentation.xml rId24 -> theme/theme4.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/presentation.xml",
+      "rid": "rId25",
+      "target": "theme/theme5.xml",
+      "msg": "Relation removed: ppt/presentation.xml rId25 -> theme/theme5.xml"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slideLayouts/slideLayout13.xml",
+      "rid": "rId1",
+      "corrupt_target": "../slideMasters/slideMaster4.xml",
+      "repaired_target": "../slideMasters/slideMaster3.xml",
+      "msg": "Relation target changed: ppt/slideLayouts/slideLayout13.xml rId1"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId1",
+      "target": "../theme/theme5.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId1 -> ../theme/theme5.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId2",
+      "target": "../slideLayouts/slideLayout13.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId2 -> ../slideLayouts/slideLayout13.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId3",
+      "target": "../slideLayouts/slideLayout14.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId3 -> ../slideLayouts/slideLayout14.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId4",
+      "target": "../slideLayouts/slideLayout15.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId4 -> ../slideLayouts/slideLayout15.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId5",
+      "target": "../slideLayouts/slideLayout16.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId5 -> ../slideLayouts/slideLayout16.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId6",
+      "target": "../slideLayouts/slideLayout17.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId6 -> ../slideLayouts/slideLayout17.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId7",
+      "target": "../slideLayouts/slideLayout18.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId7 -> ../slideLayouts/slideLayout18.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId8",
+      "target": "../slideLayouts/slideLayout19.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId8 -> ../slideLayouts/slideLayout19.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId9",
+      "target": "../slideLayouts/slideLayout20.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId9 -> ../slideLayouts/slideLayout20.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId10",
+      "target": "../slideLayouts/slideLayout21.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId10 -> ../slideLayouts/slideLayout21.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId11",
+      "target": "../slideLayouts/slideLayout22.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId11 -> ../slideLayouts/slideLayout22.xml"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideMasters/slideMaster4.xml",
+      "rid": "rId12",
+      "target": "../slideLayouts/slideLayout23.xml",
+      "msg": "Relation removed: ppt/slideMasters/slideMaster4.xml rId12 -> ../slideLayouts/slideLayout23.xml"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide5.xml",
+      "rid": "rId8",
+      "corrupt_target": "../media/image25.png",
+      "repaired_target": "../media/image28.png",
+      "msg": "Relation target changed: ppt/slides/slide5.xml rId8"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide5.xml",
+      "rid": "rId7",
+      "corrupt_target": "../media/image26.png",
+      "repaired_target": "../media/image27.png",
+      "msg": "Relation target changed: ppt/slides/slide5.xml rId7"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide5.xml",
+      "rid": "rId5",
+      "corrupt_target": "../media/image27.svg",
+      "repaired_target": "../media/image26.svg",
+      "msg": "Relation target changed: ppt/slides/slide5.xml rId5"
+    },
+    {
+      "type": "RELATION_TARGET_CHANGED",
+      "severity": "HIGH",
+      "source": "ppt/slides/slide5.xml",
+      "rid": "rId4",
+      "corrupt_target": "../media/image28.png",
+      "repaired_target": "../media/image25.png",
+      "msg": "Relation target changed: ppt/slides/slide5.xml rId4"
+    },
+    {
+      "type": "RELATION_REMOVED",
+      "severity": "HIGH",
+      "source": "ppt/slideLayouts/slideLayout23.xml",
+      "rid": "rId1",
+      "target": "../slideMasters/slideMaster4.xml",
+      "msg": "Relation removed: ppt/slideLayouts/slideLayout23.xml rId1 -> ../slideMasters/slideMaster4.xml"
+    },
+    {
+      "type": "SLIDE_ID_LIST_CHANGED",
+      "severity": "CRITICAL",
+      "corrupt": {
+        "rId5": "256",
+        "rId6": "257",
+        "rId7": "258",
+        "rId8": "259",
+        "rId9": "260",
+        "rId10": "261",
+        "rId11": "262",
+        "rId12": "263",
+        "rId13": "264",
+        "rId14": "265",
+        "rId15": "266",
+        "rId16": "267",
+        "rId17": "268"
+      },
+      "repaired": {
+        "rId4": "281",
+        "rId5": "267",
+        "rId6": "257",
+        "rId7": "259",
+        "rId8": "282",
+        "rId9": "266",
+        "rId10": "264",
+        "rId11": "260",
+        "rId12": "261",
+        "rId13": "263",
+        "rId14": "262",
+        "rId15": "265",
+        "rId16": "268"
+      },
+      "msg": "slideIdList differs between corrupt and repaired"
+    },
+    {
+      "type": "PRES_RELS_TYPE_COUNT_CHANGED",
+      "severity": "HIGH",
+      "rel_type": "slideMaster",
+      "corrupt_count": 4,
+      "repaired_count": 3,
+      "msg": "presentation.xml.rels slideMaster count: 4 -> 3",
+      "corrupt_targets": [
+        "slideMasters/slideMaster3.xml",
+        "slideMasters/slideMaster2.xml",
+        "slideMasters/slideMaster1.xml",
+        "slideMasters/slideMaster4.xml"
+      ],
+      "repaired_targets": [
+        "slideMasters/slideMaster3.xml",
+        "slideMasters/slideMaster2.xml",
+        "slideMasters/slideMaster1.xml"
+      ]
+    },
+    {
+      "type": "PRES_RELS_TYPE_COUNT_CHANGED",
+      "severity": "HIGH",
+      "rel_type": "theme",
+      "corrupt_count": 3,
+      "repaired_count": 1,
+      "msg": "presentation.xml.rels theme count: 3 -> 1",
+      "corrupt_targets": [
+        "theme/theme1.xml",
+        "theme/theme4.xml",
+        "theme/theme5.xml"
+      ],
+      "repaired_targets": [
+        "theme/theme1.xml"
+      ]
+    },
+    {
+      "type": "PRES_RELS_TOTAL_COUNT_CHANGED",
+      "severity": "HIGH",
+      "corrupt_count": 25,
+      "repaired_count": 22,
+      "msg": "Total presentation.xml.rels count: 25 -> 22"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesSlides/notesSlide6.xml",
+      "corrupt_hash": "5740a5aee0322132",
+      "repaired_hash": "621df6416da4577b",
+      "msg": "XML content differs: ppt/notesSlides/notesSlide6.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesSlides/notesSlide5.xml",
+      "corrupt_hash": "31e8f7048715b56e",
+      "repaired_hash": "409315858cfe966a",
+      "msg": "XML content differs: ppt/notesSlides/notesSlide5.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesSlides/notesSlide1.xml",
+      "corrupt_hash": "156f30d9f5cb02e1",
+      "repaired_hash": "5057b712b0e3c1cc",
+      "msg": "XML content differs: ppt/notesSlides/notesSlide1.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "docProps/app.xml",
+      "corrupt_hash": "24d8f5d32fd993ea",
+      "repaired_hash": "ad51a7989e8a2b8a",
+      "msg": "XML content differs: docProps/app.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesSlides/notesSlide8.xml",
+      "corrupt_hash": "12604d76e3433855",
+      "repaired_hash": "dc0d89ac4ca49a2e",
+      "msg": "XML content differs: ppt/notesSlides/notesSlide8.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesSlides/notesSlide4.xml",
+      "corrupt_hash": "61fba7d985eed8db",
+      "repaired_hash": "ceab85ad2cb48716",
+      "msg": "XML content differs: ppt/notesSlides/notesSlide4.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesSlides/notesSlide3.xml",
+      "corrupt_hash": "78fbea8b5390d436",
+      "repaired_hash": "92c662e8eb0deaa6",
+      "msg": "XML content differs: ppt/notesSlides/notesSlide3.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesSlides/notesSlide10.xml",
+      "corrupt_hash": "49615e3a344b70ce",
+      "repaired_hash": "b2dc27b34809460a",
+      "msg": "XML content differs: ppt/notesSlides/notesSlide10.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "[Content_Types].xml",
+      "corrupt_hash": "7deaa6c226f35ace",
+      "repaired_hash": "1c9f09a47e0eb94a",
+      "msg": "XML content differs: [Content_Types].xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/viewProps.xml",
+      "corrupt_hash": "bb977cd1b0e463f9",
+      "repaired_hash": "fba3a5edfba3bf80",
+      "msg": "XML content differs: ppt/viewProps.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/theme/theme4.xml",
+      "corrupt_hash": "6649559090cf2540",
+      "repaired_hash": "78f5da2a01db4b4d",
+      "msg": "XML content differs: ppt/theme/theme4.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesSlides/notesSlide2.xml",
+      "corrupt_hash": "e3475ac26b06fb2a",
+      "repaired_hash": "e055636cab6d6315",
+      "msg": "XML content differs: ppt/notesSlides/notesSlide2.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesSlides/notesSlide11.xml",
+      "corrupt_hash": "300b8b037a19ee37",
+      "repaired_hash": "881ddb416b3a1ea5",
+      "msg": "XML content differs: ppt/notesSlides/notesSlide11.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesSlides/notesSlide7.xml",
+      "corrupt_hash": "58f6ffad58370b5d",
+      "repaired_hash": "4e3fb771f28331c5",
+      "msg": "XML content differs: ppt/notesSlides/notesSlide7.xml"
+    },
+    {
+      "type": "SLIDEMASTER_LAYOUT_COUNT_CHANGED",
+      "severity": "HIGH",
+      "file": "ppt/slideMasters/slideMaster3.xml",
+      "corrupt": 6,
+      "repaired": 7,
+      "msg": "SlideMaster ppt/slideMasters/slideMaster3.xml: layout count changed from 6 to 7"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesSlides/notesSlide9.xml",
+      "corrupt_hash": "dd732468907672d8",
+      "repaired_hash": "fc29933393ef5576",
+      "msg": "XML content differs: ppt/notesSlides/notesSlide9.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "ppt/notesMasters/notesMaster1.xml",
+      "corrupt_hash": "bd5efff0059d1d53",
+      "repaired_hash": "44fab1619cc1fe58",
+      "msg": "XML content differs: ppt/notesMasters/notesMaster1.xml"
+    },
+    {
+      "type": "XML_CONTENT_CHANGED",
+      "severity": "MEDIUM",
+      "file": "docProps/core.xml",
+      "corrupt_hash": "0df39963a3bc4422",
+      "repaired_hash": "cfdebf755de87810",
+      "msg": "XML content differs: docProps/core.xml"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "0012f9516b97d2c1",
+      "corrupt_files": [
+        "ppt/slideLayouts/_rels/slideLayout7.xml.rels",
+        "ppt/slideLayouts/_rels/slideLayout8.xml.rels",
+        "ppt/slideLayouts/_rels/slideLayout9.xml.rels",
+        "ppt/slideLayouts/_rels/slideLayout10.xml.rels",
+        "ppt/slideLayouts/_rels/slideLayout11.xml.rels",
+        "ppt/slideLayouts/_rels/slideLayout12.xml.rels"
+      ],
+      "repaired_files": [
+        "ppt/slideLayouts/_rels/slideLayout7.xml.rels",
+        "ppt/slideLayouts/_rels/slideLayout8.xml.rels",
+        "ppt/slideLayouts/_rels/slideLayout10.xml.rels",
+        "ppt/slideLayouts/_rels/slideLayout11.xml.rels",
+        "ppt/slideLayouts/_rels/slideLayout12.xml.rels",
+        "ppt/slideLayouts/_rels/slideLayout9.xml.rels",
+        "ppt/slideLayouts/_rels/slideLayout13.xml.rels"
+      ],
+      "msg": "Same content, different names: ['ppt/slideLayouts/_rels/slideLayout7.xml.rels', 'ppt/slideLayouts/_rels/slideLayout8.xml.rels', 'ppt/slideLayouts/_rels/slideLayout9.xml.rels', 'ppt/slideLayouts/_rels/slideLayout10.xml.rels', 'ppt/slideLayouts/_rels/slideLayout11.xml.rels', 'ppt/slideLayouts/_rels/slideLayout12.xml.rels'] vs ['ppt/slideLayouts/_rels/slideLayout7.xml.rels', 'ppt/slideLayouts/_rels/slideLayout8.xml.rels', 'ppt/slideLayouts/_rels/slideLayout10.xml.rels', 'ppt/slideLayouts/_rels/slideLayout11.xml.rels', 'ppt/slideLayouts/_rels/slideLayout12.xml.rels', 'ppt/slideLayouts/_rels/slideLayout9.xml.rels', 'ppt/slideLayouts/_rels/slideLayout13.xml.rels']"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "f72855d53f3f2796",
+      "corrupt_files": [
+        "ppt/media/image21.png"
+      ],
+      "repaired_files": [
+        "ppt/media/image24.png"
+      ],
+      "msg": "Same content, different names: ['ppt/media/image21.png'] vs ['ppt/media/image24.png']"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "d2aecec4ef74faf1",
+      "corrupt_files": [
+        "ppt/media/image22.png"
+      ],
+      "repaired_files": [
+        "ppt/media/image23.png"
+      ],
+      "msg": "Same content, different names: ['ppt/media/image22.png'] vs ['ppt/media/image23.png']"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "1f3416342e2173a4",
+      "corrupt_files": [
+        "ppt/media/image23.png"
+      ],
+      "repaired_files": [
+        "ppt/media/image22.png"
+      ],
+      "msg": "Same content, different names: ['ppt/media/image23.png'] vs ['ppt/media/image22.png']"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "d086fc2199235457",
+      "corrupt_files": [
+        "ppt/media/image24.png"
+      ],
+      "repaired_files": [
+        "ppt/media/image21.png"
+      ],
+      "msg": "Same content, different names: ['ppt/media/image24.png'] vs ['ppt/media/image21.png']"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "fae14c936c75e847",
+      "corrupt_files": [
+        "ppt/media/image25.png"
+      ],
+      "repaired_files": [
+        "ppt/media/image28.png"
+      ],
+      "msg": "Same content, different names: ['ppt/media/image25.png'] vs ['ppt/media/image28.png']"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "5f41dbcafa3be8d8",
+      "corrupt_files": [
+        "ppt/media/image26.png"
+      ],
+      "repaired_files": [
+        "ppt/media/image27.png"
+      ],
+      "msg": "Same content, different names: ['ppt/media/image26.png'] vs ['ppt/media/image27.png']"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "b500f1073c15c393",
+      "corrupt_files": [
+        "ppt/media/image27.svg"
+      ],
+      "repaired_files": [
+        "ppt/media/image26.svg"
+      ],
+      "msg": "Same content, different names: ['ppt/media/image27.svg'] vs ['ppt/media/image26.svg']"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "f38e6e113a0ef2e9",
+      "corrupt_files": [
+        "ppt/media/image31.png"
+      ],
+      "repaired_files": [
+        "ppt/media/image34.png"
+      ],
+      "msg": "Same content, different names: ['ppt/media/image31.png'] vs ['ppt/media/image34.png']"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "a243042ec03f2a68",
+      "corrupt_files": [
+        "ppt/media/image32.png"
+      ],
+      "repaired_files": [
+        "ppt/media/image33.png"
+      ],
+      "msg": "Same content, different names: ['ppt/media/image32.png'] vs ['ppt/media/image33.png']"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "801d348d9c587682",
+      "corrupt_files": [
+        "ppt/media/image33.png"
+      ],
+      "repaired_files": [
+        "ppt/media/image32.png"
+      ],
+      "msg": "Same content, different names: ['ppt/media/image33.png'] vs ['ppt/media/image32.png']"
+    },
+    {
+      "type": "RENAMED_IDENTICAL_CONTENT",
+      "severity": "INFO",
+      "hash": "bab42b3889903f5f",
+      "corrupt_files": [
+        "ppt/media/image34.png"
+      ],
+      "repaired_files": [
+        "ppt/media/image31.png"
+      ],
+      "msg": "Same content, different names: ['ppt/media/image34.png'] vs ['ppt/media/image31.png']"
+    }
+  ]
+}

@@ -35,6 +35,6 @@ class SanitizeReport
 
     public function countBySeverity(Severity $severity): int
     {
-        return count(array_filter($this->issues, fn(SanitizeIssue $i) => $i->severity === $severity));
+        return count(array_filter($this->issues, fn (SanitizeIssue $i) => $i->severity === $severity));
     }
 }
