@@ -1212,20 +1212,11 @@ class PPTX
      */
     protected function getSanitizeRules(): array
     {
-        // Rules are added incrementally as they are implemented (Tasks 5-7)
-        $rules = [];
-
-        if (class_exists(UniqueRIdRule::class)) {
-            $rules[] = new UniqueRIdRule();
-        }
-        if (class_exists(AllRIdsResolveRule::class)) {
-            $rules[] = new AllRIdsResolveRule();
-        }
-        if (class_exists(OrphanedSlideMasterRule::class)) {
-            $rules[] = new OrphanedSlideMasterRule();
-        }
-
-        return $rules;
+        return [
+            new UniqueRIdRule(),
+            new AllRIdsResolveRule(),
+            new OrphanedSlideMasterRule(),
+        ];
     }
 
     /**
