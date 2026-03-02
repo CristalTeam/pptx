@@ -45,6 +45,9 @@ class OptimizationConfig
         'validate_images' => false,
         'max_image_size' => self::MAX_IMAGE_SIZE_DEFAULT,
 
+        // Sanitization (auto-repair before save)
+        'sanitize' => true,
+
         // Debug
         'collect_stats' => false,
     ];

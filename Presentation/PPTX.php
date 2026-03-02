@@ -27,6 +27,11 @@ use Cristal\Presentation\Resource\Video;
 use Cristal\Presentation\Resource\XmlResource;
 use Cristal\Presentation\Stats\OptimizationStats;
 use Cristal\Presentation\Validator\ImageValidator;
+use Cristal\Presentation\Sanitizer\PPTXSanitizer;
+use Cristal\Presentation\Sanitizer\SanitizeReport;
+use Cristal\Presentation\Sanitizer\Rules\UniqueRIdRule;
+use Cristal\Presentation\Sanitizer\Rules\AllRIdsResolveRule;
+use Cristal\Presentation\Sanitizer\Rules\OrphanedSlideMasterRule;
 use Cristal\Presentation\Validator\PresentationValidator;
 use Exception;
 use ZipArchive;
@@ -56,6 +61,8 @@ class PPTX
     protected OptimizationStats $stats;
 
     protected ?PresentationValidator $validator = null;
+
+    protected ?SanitizeReport $sanitizeReport = null;
 
     /**
      * PPTX constructor.
@@ -1175,6 +1182,12 @@ class PPTX
         // Save ContentType after all modifications
         $this->contentType->save();
 
+        // Sanitize: detect and auto-repair structural issues
+        if ($this->config->isEnabled('sanitize')) {
+            $sanitizer = new PPTXSanitizer($this->getSanitizeRules());
+            $this->sanitizeReport = $sanitizer->sanitize($this->archive);
+        }
+
         $this->close();
 
         if (!copy($this->tmpName, $target)) {
@@ -1183,7 +1196,38 @@ class PPTX
 
         $this->openFile($this->tmpName);
     }
-    
+
+    /**
+     * Get the sanitize report from the last saveAs() call.
+     */
+    public function getSanitizeReport(): ?SanitizeReport
+    {
+        return $this->sanitizeReport;
+    }
+
+    /**
+     * Build the list of sanitize rules to apply.
+     *
+     * @return \Cristal\Presentation\Sanitizer\SanitizeRule[]
+     */
+    protected function getSanitizeRules(): array
+    {
+        // Rules are added incrementally as they are implemented (Tasks 5-7)
+        $rules = [];
+
+        if (class_exists(UniqueRIdRule::class)) {
+            $rules[] = new UniqueRIdRule();
+        }
+        if (class_exists(AllRIdsResolveRule::class)) {
+            $rules[] = new AllRIdsResolveRule();
+        }
+        if (class_exists(OrphanedSlideMasterRule::class)) {
+            $rules[] = new OrphanedSlideMasterRule();
+        }
+
+        return $rules;
+    }
+
     /**
      * Reorder rIds in presentation.xml to follow PowerPoint OPC conventions.
      *
