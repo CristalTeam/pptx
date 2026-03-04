@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Cristal\Presentation\Tests\Sanitizer;
 
+use Cristal\Presentation\PPTX;
 use Cristal\Presentation\Sanitizer\PPTXSanitizer;
 use Cristal\Presentation\Sanitizer\Rules\AllRIdsResolveRule;
+use Cristal\Presentation\Sanitizer\Rules\BidirectionalMasterLayoutRule;
 use Cristal\Presentation\Sanitizer\Rules\OrphanedSlideMasterRule;
 use Cristal\Presentation\Sanitizer\Rules\UniqueRIdRule;
 use Cristal\Presentation\Sanitizer\Severity;
@@ -14,6 +16,31 @@ use ZipArchive;
 
 class PPTXSanitizerIntegrationTest extends TestCase
 {
+    private function createSanitizer(): PPTXSanitizer
+    {
+        return new PPTXSanitizer([
+            new UniqueRIdRule(),
+            new BidirectionalMasterLayoutRule(),
+            new AllRIdsResolveRule(),
+            new OrphanedSlideMasterRule(),
+        ]);
+    }
+
+    /**
+     * Open a PPTX as a temporary copy to avoid modifying test fixtures.
+     * sanitize() calls repair() which writes to the archive.
+     */
+    private function openAsCopy(string $sourcePath): array
+    {
+        $tmpPath = tempnam(sys_get_temp_dir(), 'pptx_test_');
+        copy($sourcePath, $tmpPath);
+
+        $zip = new ZipArchive();
+        $zip->open($tmpPath);
+
+        return [$zip, $tmpPath];
+    }
+
     /** @test */
     public function it_detects_issues_in_propale_failed(): void
     {
@@ -22,44 +49,14 @@ class PPTXSanitizerIntegrationTest extends TestCase
             $this->markTestSkipped('PropaleFailed.pptx not available');
         }
 
-        $zip = new ZipArchive();
-        $zip->open($path);
+        [$zip, $tmpPath] = $this->openAsCopy($path);
 
-        $sanitizer = new PPTXSanitizer([
-            new UniqueRIdRule(),
-            new AllRIdsResolveRule(),
-            new OrphanedSlideMasterRule(),
-        ]);
-
-        $report = $sanitizer->sanitize($zip);
+        $report = $this->createSanitizer()->sanitize($zip);
         $zip->close();
+        unlink($tmpPath);
 
-        // Note: PropaleFailed.pptx has structural issues (duplicate sldLayoutIdLst entries,
-        // broken bidirectional master<->layout references) that are not yet covered by
-        // the current rule set (UniqueRIdRule, AllRIdsResolveRule, OrphanedSlideMasterRule).
-        // All 3 masters are actually used by slides, and no rIds are duplicated in
-        // presentation.xml. The corruption manifests differently (e.g. in sldMaster XML).
-        //
-        // This test documents the current detection capability: if the current rules
-        // happen to find issues (e.g. undeclared rIds in individual XML files), we assert
-        // that repaired issues are tracked. If no issues are found, we mark as incomplete
-        // to signal that the sanitizer coverage for this file type is not yet complete.
-
-        if (!$report->hasIssues()) {
-            $this->markTestIncomplete(
-                'PropaleFailed.pptx contains corruption not yet detectable by the current rule set '
-                . '(UniqueRIdRule, AllRIdsResolveRule, OrphanedSlideMasterRule). '
-                . 'The file has: duplicate sldLayoutIdLst entries, broken bidirectional master<->layout '
-                . 'references. Additional rules are needed to detect these issues.'
-            );
-        }
-
-        // PropaleFailed.pptx has known issues
         $this->assertTrue($report->hasIssues(), 'PropaleFailed.pptx should have detectable issues');
-
-        // At minimum: duplicate rId and/or orphaned masters
-        $criticalCount = $report->countBySeverity(Severity::CRITICAL);
-        $this->assertGreaterThanOrEqual(1, $criticalCount, 'Should detect at least 1 CRITICAL issue');
+        $this->assertGreaterThanOrEqual(1, $report->countBySeverity(Severity::CRITICAL));
     }
 
     /** @test */
@@ -70,54 +67,26 @@ class PPTXSanitizerIntegrationTest extends TestCase
             $this->markTestSkipped('PropaleFailed.pptx not available');
         }
 
-        // Work on a copy
-        $tmpPath = tempnam(sys_get_temp_dir(), 'pptx_repair_');
-        copy($sourcePath, $tmpPath);
+        [$zip, $tmpPath] = $this->openAsCopy($sourcePath);
 
-        $zip = new ZipArchive();
-        $zip->open($tmpPath);
-
-        $sanitizer = new PPTXSanitizer([
-            new UniqueRIdRule(),
-            new AllRIdsResolveRule(),
-            new OrphanedSlideMasterRule(),
-        ]);
-
+        $sanitizer = $this->createSanitizer();
         $report = $sanitizer->sanitize($zip);
         $zip->close();
 
-        if (!$report->hasIssues()) {
-            unlink($tmpPath);
-            $this->markTestIncomplete(
-                'PropaleFailed.pptx: no issues detected by current rules — repair test skipped. '
-                . 'The file corruption (duplicate sldLayoutIdLst, broken master<->layout bidirectional '
-                . 'references) requires additional rules not yet implemented.'
-            );
-        }
+        $this->assertTrue($report->hasIssues(), 'First pass should detect issues');
 
-        // Re-open and verify no more issues detected
+        // Re-open and verify no more CRITICAL issues
+        $zip = new ZipArchive();
         $zip->open($tmpPath);
         $verifyReport = $sanitizer->sanitize($zip);
         $zip->close();
-
         unlink($tmpPath);
-
-        $remainingCritical = $verifyReport->countBySeverity(Severity::CRITICAL);
-
-        if ($remainingCritical > 0) {
-            $remainingMessages = implode(', ', array_map(
-                fn ($i) => $i->message,
-                array_filter($verifyReport->getIssues(), fn ($i) => $i->severity === Severity::CRITICAL)
-            ));
-            $this->markTestIncomplete(
-                "After repair, $remainingCritical CRITICAL issue(s) remain unresolved: $remainingMessages"
-            );
-        }
 
         $this->assertSame(
             0,
-            $remainingCritical,
-            'After repair, no CRITICAL issues should remain'
+            $verifyReport->countBySeverity(Severity::CRITICAL),
+            'After repair, no CRITICAL issues should remain. Remaining: '
+            . implode(', ', array_map(fn ($i) => $i->message, $verifyReport->getIssues()))
         );
     }
 
@@ -129,35 +98,74 @@ class PPTXSanitizerIntegrationTest extends TestCase
             $this->markTestSkipped('PropaleRepaired.pptx not available');
         }
 
-        $zip = new ZipArchive();
-        $zip->open($path);
+        [$zip, $tmpPath] = $this->openAsCopy($path);
 
-        $sanitizer = new PPTXSanitizer([
-            new UniqueRIdRule(),
-            new AllRIdsResolveRule(),
-            new OrphanedSlideMasterRule(),
-        ]);
-
-        $report = $sanitizer->sanitize($zip);
+        $report = $this->createSanitizer()->sanitize($zip);
         $zip->close();
-
-        $criticalCount = $report->countBySeverity(Severity::CRITICAL);
-
-        if ($criticalCount > 0) {
-            $criticalMessages = implode(', ', array_map(
-                fn ($i) => $i->message,
-                array_filter($report->getIssues(), fn ($i) => $i->severity === Severity::CRITICAL)
-            ));
-            $this->markTestSkipped(
-                "PropaleRepaired.pptx has $criticalCount CRITICAL issue(s) that PowerPoint repaired differently "
-                . "(the current rules may be overly strict): $criticalMessages"
-            );
-        }
+        unlink($tmpPath);
 
         $this->assertSame(
             0,
             $report->countBySeverity(Severity::CRITICAL),
             'PropaleRepaired.pptx should have no CRITICAL issues'
         );
+    }
+
+    /** @test */
+    public function it_sanitizes_merge_of_T1_T9_T5(): void
+    {
+        $t1Path = __DIR__ . '/../mock/T1.pptx';
+        $t9Path = __DIR__ . '/../mock/T9.pptx';
+        $t5Path = __DIR__ . '/../mock/T5.pptx';
+
+        foreach ([$t1Path, $t9Path, $t5Path] as $path) {
+            if (!file_exists($path)) {
+                $this->markTestSkipped(basename($path) . ' not available');
+            }
+        }
+
+        // Merge T1 + T9 + T5
+        $pptx = new PPTX($t1Path);
+        $t9 = new PPTX($t9Path);
+        $t5 = new PPTX($t5Path);
+
+        $pptx->addSlides($t9->getSlides());
+        $pptx->addSlides($t5->getSlides());
+
+        $outputPath = __DIR__ . '/../tmp/merge_T1_T9_T5.pptx';
+        $pptx->saveAs($outputPath);
+
+        // saveAs() should have auto-repaired any issues
+        $saveReport = $pptx->getSanitizeReport();
+        $this->assertNotNull($saveReport);
+
+        // Verify the output file is clean
+        [$zip, $tmpPath] = $this->openAsCopy($outputPath);
+
+        $verifyReport = $this->createSanitizer()->sanitize($zip);
+
+        // Structural checks
+        $presXml = $zip->getFromName('ppt/presentation.xml');
+        preg_match_all('/<p:sldId /', $presXml, $slides);
+        $this->assertSame(15, count($slides[0]), 'Should have 15 slides (7+1+7)');
+
+        // No duplicate rIds
+        preg_match_all('/r:id="(rId\d+)"/', $presXml, $rids);
+        $dupes = array_filter(array_count_values($rids[1]), fn ($c) => $c > 1);
+        $this->assertEmpty($dupes, 'No duplicate rIds in presentation.xml');
+
+        // No CRITICAL issues
+        $criticalIssues = array_filter(
+            $verifyReport->getIssues(),
+            fn ($i) => $i->severity === Severity::CRITICAL
+        );
+        $this->assertEmpty(
+            $criticalIssues,
+            'Output file should have no CRITICAL issues. Found: '
+            . implode(', ', array_map(fn ($i) => $i->message, $criticalIssues))
+        );
+
+        $zip->close();
+        unlink($tmpPath);
     }
 }

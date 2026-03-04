@@ -6,6 +6,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use Cristal\Presentation\Sanitizer\PPTXSanitizer;
 use Cristal\Presentation\Sanitizer\Rules\AllRIdsResolveRule;
+use Cristal\Presentation\Sanitizer\Rules\BidirectionalMasterLayoutRule;
 use Cristal\Presentation\Sanitizer\Rules\OrphanedSlideMasterRule;
 use Cristal\Presentation\Sanitizer\Rules\UniqueRIdRule;
 use Cristal\Presentation\Comparator\PPTXComparator;
@@ -24,6 +25,7 @@ if ($command === 'diagnose' && isset($argv[2])) {
 
     $sanitizer = new PPTXSanitizer([
         new UniqueRIdRule(),
+        new BidirectionalMasterLayoutRule(),
         new AllRIdsResolveRule(),
         new OrphanedSlideMasterRule(),
     ]);

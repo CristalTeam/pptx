@@ -27,6 +27,7 @@ use Cristal\Presentation\Resource\Video;
 use Cristal\Presentation\Resource\XmlResource;
 use Cristal\Presentation\Sanitizer\PPTXSanitizer;
 use Cristal\Presentation\Sanitizer\Rules\AllRIdsResolveRule;
+use Cristal\Presentation\Sanitizer\Rules\BidirectionalMasterLayoutRule;
 use Cristal\Presentation\Sanitizer\Rules\OrphanedSlideMasterRule;
 use Cristal\Presentation\Sanitizer\Rules\UniqueRIdRule;
 use Cristal\Presentation\Sanitizer\SanitizeReport;
@@ -1222,6 +1223,7 @@ class PPTX
         // but auto-repair requires full cleanup of related layouts (future work).
         return [
             new UniqueRIdRule(),
+            new BidirectionalMasterLayoutRule(),
             new AllRIdsResolveRule(),
         ];
     }
