@@ -1216,15 +1216,11 @@ class PPTX
      */
     protected function getSanitizeRules(): array
     {
-        // OrphanedSlideMasterRule is NOT included here: its repair() only removes
-        // the master from sldMasterIdLst but leaves its layouts intact, creating
-        // UNDECLARED_MASTER validation errors. Orphaned masters (in sldMasterIdLst
-        // but unused by slides) are benign in PowerPoint — detection is available
-        // but auto-repair requires full cleanup of related layouts (future work).
         return [
             new UniqueRIdRule(),
             new BidirectionalMasterLayoutRule(),
             new AllRIdsResolveRule(),
+            new OrphanedSlideMasterRule(),
         ];
     }
 
