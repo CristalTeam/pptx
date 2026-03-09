@@ -1186,19 +1186,21 @@ class PPTX
         // Save ContentType after all modifications
         $this->contentType->save();
 
-        // Sanitize: detect and auto-repair structural issues
-        if ($this->config->isEnabled('sanitize')) {
-            $sanitizer = new PPTXSanitizer($this->getSanitizeRules());
-            $this->sanitizeReport = $sanitizer->sanitize($this->archive);
-        }
-
         $this->close();
 
         if (!copy($this->tmpName, $target)) {
             throw new FileSaveException('Unable to save the final PPTX. Error during the copying.');
         }
 
-        $this->openFile($this->tmpName);
+        $this->openFile($target);
+
+        // Sanitize: detect and auto-repair structural issues
+        if ($this->config->isEnabled('sanitize')) {
+            $testArchive = new ZipArchive();
+            $testArchive->open($target);
+            $sanitizer = new PPTXSanitizer($this->getSanitizeRules());
+            $this->sanitizeReport = $sanitizer->sanitize($testArchive);
+        }
     }
 
     /**
