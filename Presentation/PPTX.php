@@ -1196,10 +1196,14 @@ class PPTX
 
         // Sanitize: detect and auto-repair structural issues
         if ($this->config->isEnabled('sanitize')) {
-            $testArchive = new ZipArchive();
-            $testArchive->open($target);
-            $sanitizer = new PPTXSanitizer($this->getSanitizeRules());
-            $this->sanitizeReport = $sanitizer->sanitize($testArchive);
+            $max = 5;
+            do {
+                $testArchive = new ZipArchive();
+                $testArchive->open($target);
+                $sanitizer = new PPTXSanitizer($this->getSanitizeRules());
+                $this->sanitizeReport = $sanitizer->sanitize($testArchive);
+                $testArchive->close();
+            } while ($this->sanitizeReport->hasIssues() && $max-- > 0);
         }
     }
 
