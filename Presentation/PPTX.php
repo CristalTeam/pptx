@@ -895,12 +895,6 @@ class PPTX
                 $this->collectImageStats($resource);
             }
 
-            // Skip SlideMasters - their .rels files are managed by registerSlideLayoutsWithMaster()
-            // Saving them here would overwrite the layout registrations we just added
-            if ($resource instanceof SlideMaster) {
-                continue;
-            }
-
             $resource->save();
         }
     }

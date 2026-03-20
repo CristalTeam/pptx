@@ -32,6 +32,7 @@ class ContentType extends GenericResource
         'application/vnd.openxmlformats-officedocument.presentationml.theme+xml' => Theme::class,
         'application/vnd.openxmlformats-officedocument.presentationml.viewProps+xml' => XmlResource::class,
         'application/vnd.openxmlformats-officedocument.presentationml.presProps+xml' => XmlResource::class,
+        'application/vnd.openxmlformats-officedocument.customXmlProperties+xml' => XmlResource::class,
         'application/vnd.ms-powerpoint.revisioninfo+xml' => XmlResource::class,
         'application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml' => NoteSlide::class,
         // Comments support (ECMA-376 Part 1, Section 13.3.2)
