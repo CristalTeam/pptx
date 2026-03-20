@@ -233,7 +233,12 @@ class Slide extends XmlResource
         $nodes = $this->content->xpath('//p:pic');
 
         foreach ($nodes as $node) {
-            $id = (string) $node->xpath('p:blipFill/a:blip/@r:embed')[0]->embed;
+            $node->registerXPathNamespace('asvg', 'http://schemas.microsoft.com/office/drawing/2016/SVG/main');
+
+            $embed = $node->xpath('p:blipFill/a:blip/@r:embed')[0]
+                ?? $node->xpath('p:blipFill/a:blip/a:extLst/a:ext/asvg:svgBlip/@r:embed')[0];
+
+            $id = (string) $embed->embed;
             $key = $node->xpath('p:nvPicPr/p:cNvPr/@descr');
             if ($key && isset($key[0]) && !empty($key[0]->descr)) {
                 yield $id => (string) $key[0]->descr;
