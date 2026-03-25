@@ -257,15 +257,18 @@ class ContentType extends GenericResource
         // For layouts without a type (null), fall back to content hash comparison
         if ($originalResource instanceof SlideLayout) {
             $originalType = $originalResource->getLayoutType();
+            $originalMasterThemeHash = $originalResource->getMasterThemeHash();
             $startBy = dirname($originalResource->getTarget()) . '/';
 
             if ($originalType !== null) {
-                // Compare by layout type
+                // Compare by layout type AND parent master's theme hash
+                // Layouts with the same type but different themes must not be reused
                 foreach ($this->cachedFilename as $path) {
                     if (str_starts_with($path, $startBy) && dirname($path) . '/' === $startBy) {
                         $existingFile = $this->getResource($path, $originalResource->getRelType(), false, true);
                         if ($existingFile instanceof SlideLayout
-                            && $existingFile->getLayoutType() === $originalType) {
+                            && $existingFile->getLayoutType() === $originalType
+                            && $existingFile->getMasterThemeHash() === $originalMasterThemeHash) {
                             return $existingFile;
                         }
                     }
@@ -288,16 +291,18 @@ class ContentType extends GenericResource
             return null;
         }
 
-        // For SlideMasters: compare by layout types signature
-        // SlideMasters with the same set of layout types are considered equivalent
+        // For SlideMasters: compare by layout types signature AND theme content hash
+        // SlideMasters are only equivalent if they have the same layouts AND the same theme
         if ($originalResource instanceof SlideMaster) {
             $originalSignature = $originalResource->getLayoutTypesSignature();
+            $originalThemeHash = $originalResource->getThemeHash();
             $startBy = dirname($originalResource->getTarget()) . '/';
             foreach ($this->cachedFilename as $path) {
                 if (str_starts_with($path, $startBy) && dirname($path) . '/' === $startBy) {
                     $existingFile = $this->getResource($path, $originalResource->getRelType(), false, true);
                     if ($existingFile instanceof SlideMaster
-                        && $existingFile->getLayoutTypesSignature() === $originalSignature) {
+                        && $existingFile->getLayoutTypesSignature() === $originalSignature
+                        && $existingFile->getThemeHash() === $originalThemeHash) {
                         return $existingFile;
                     }
                 }

@@ -174,6 +174,25 @@ class SlideMaster extends XmlResource
     }
 
     /**
+     * Get the SHA256 hash of this master's Theme content.
+     *
+     * Used to distinguish SlideMasters that have the same layout types
+     * but different themes during merge deduplication.
+     *
+     * @return string|null The theme content hash, or null if no theme found
+     */
+    public function getThemeHash(): ?string
+    {
+        foreach ($this->getResources() as $resource) {
+            if ($resource instanceof Theme) {
+                return $resource->getHashFile();
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Get layout types signature for this SlideMaster.
      *
      * Returns a sorted array of layout types (e.g., ['blank', 'obj', 'title', ...])

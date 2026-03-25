@@ -1072,10 +1072,11 @@ class PPTX
                     return $resourceList;
                 }
 
-                // This master will be cloned - mark its Theme as force-clone
-                // so the new master gets its own theme reference
+                // This master will be cloned - mark its Theme and SlideLayouts as force-clone
+                // so the new master gets its own theme reference and layouts
+                // are not incorrectly reused from a master with a different theme
                 foreach ($resource->getResources() as $subResource) {
-                    if ($subResource instanceof Theme) {
+                    if ($subResource instanceof Theme || $subResource instanceof SlideLayout) {
                         $forceCloneTargets[] = $subResource->getTarget();
                     }
                 }

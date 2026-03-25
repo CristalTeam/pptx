@@ -38,4 +38,19 @@ class SlideLayout extends XmlResource
 
         return null;
     }
+
+    /**
+     * Get the theme hash of this layout's parent SlideMaster.
+     *
+     * Used to distinguish layouts that have the same type but belong
+     * to masters with different themes during merge deduplication.
+     *
+     * @return string|null The master's theme hash, or null if not available
+     */
+    public function getMasterThemeHash(): ?string
+    {
+        $master = $this->getSlideMaster();
+
+        return $master?->getThemeHash();
+    }
 }
