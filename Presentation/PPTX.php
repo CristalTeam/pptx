@@ -232,7 +232,8 @@ class PPTX
         // Get the tree with information about which resources must be force-cloned
         $resourceList = [];
         $forceCloneTargets = [];
-        $tree = $this->getResourceTree($res, $resourceList, $forceCloneTargets);
+        $layoutToSourceMaster = [];
+        $tree = $this->getResourceTree($res, $resourceList, $forceCloneTargets, $layoutToSourceMaster);
 
         /** @var array<string, ResourceInterface> $clonedResources */
         $clonedResources = [];
@@ -256,7 +257,7 @@ class PPTX
         $this->updateResourceReferences($clonedResources, $resourceMapping);
 
         // Notify presentation and register slides
-        $this->registerResourcesWithPresentation($clonedResources, $res);
+        $this->registerResourcesWithPresentation($clonedResources, $res, $layoutToSourceMaster);
 
         // Save all cloned resources
         $this->saveClonedResources($clonedResources);
@@ -668,8 +669,9 @@ class PPTX
      *
      * @param array<string, ResourceInterface> $clonedResources
      * @param GenericResource $originalResource
+     * @param array<string, string> $layoutToSourceMaster Mapping of source layout target → source master target
      */
-    protected function registerResourcesWithPresentation(array $clonedResources, GenericResource $originalResource): void
+    protected function registerResourcesWithPresentation(array $clonedResources, GenericResource $originalResource, array $layoutToSourceMaster = []): void
     {
         // Separate resources by type to control registration order
         $slides = [];
@@ -711,7 +713,7 @@ class PPTX
         }
 
         // Register SlideLayouts with their parent SlideMaster
-        $this->registerSlideLayoutsWithMaster($slideLayouts, $clonedResources);
+        $this->registerSlideLayoutsWithMaster($slideLayouts, $clonedResources, $layoutToSourceMaster);
     }
 
     /**
@@ -726,15 +728,16 @@ class PPTX
      *
      * @param SlideLayout[] $slideLayouts The SlideLayouts to register
      * @param array<string, ResourceInterface> $clonedResources Mapping of cloned resources
+     * @param array<string, string> $layoutToSourceMaster Mapping of source layout target → source master target
      */
-    protected function registerSlideLayoutsWithMaster(array $slideLayouts, array $clonedResources): void
+    protected function registerSlideLayoutsWithMaster(array $slideLayouts, array $clonedResources, array $layoutToSourceMaster = []): void
     {
         // Track which SlideMasters were modified
         $modifiedMasters = [];
 
         foreach ($slideLayouts as $slideLayout) {
             // Find the SlideMaster this layout belongs to in the DESTINATION document
-            $slideMaster = $this->findDestinationSlideMasterForLayout($slideLayout, $clonedResources);
+            $slideMaster = $this->findDestinationSlideMasterForLayout($slideLayout, $clonedResources, $layoutToSourceMaster);
 
             if ($slideMaster === null) {
                 continue;
@@ -774,11 +777,43 @@ class PPTX
      *
      * @param SlideLayout $slideLayout The SlideLayout to find the master for
      * @param array<string, ResourceInterface> $clonedResources Mapping of cloned resources
+     * @param array<string, string> $layoutToSourceMaster Mapping of source layout target → source master target
      * @return SlideMaster|null The destination SlideMaster or null if not found
      */
-    protected function findDestinationSlideMasterForLayout(SlideLayout $slideLayout, array $clonedResources): ?SlideMaster
+    protected function findDestinationSlideMasterForLayout(SlideLayout $slideLayout, array $clonedResources, array $layoutToSourceMaster = []): ?SlideMaster
     {
-        // First, find the SlideMaster the SlideLayout references
+        // Strategy 1: Use the tracked source layout→master mapping (most reliable).
+        // This was recorded during getResourceTree() before any reuse happened,
+        // so it reflects the TRUE parent master from the source document.
+        $sourceMasterTarget = null;
+        foreach ($layoutToSourceMaster as $sourceLayoutTarget => $masterTarget) {
+            // Check if this layout was cloned/reused from this source layout
+            if (isset($clonedResources[$sourceLayoutTarget]) &&
+                $clonedResources[$sourceLayoutTarget]->getTarget() === $slideLayout->getTarget()) {
+                $sourceMasterTarget = $masterTarget;
+                break;
+            }
+        }
+
+        if ($sourceMasterTarget !== null) {
+            // Find the destination master from the clonedResources mapping
+            $destTarget = $sourceMasterTarget;
+            if (isset($clonedResources[$sourceMasterTarget])) {
+                $mappedResource = $clonedResources[$sourceMasterTarget];
+                if ($mappedResource instanceof SlideMaster) {
+                    $destTarget = $mappedResource->getTarget();
+                }
+            }
+
+            foreach ($this->presentation->getResources() as $resource) {
+                if ($resource instanceof SlideMaster && $resource->getTarget() === $destTarget) {
+                    return $resource;
+                }
+            }
+        }
+
+        // Strategy 2 (fallback): Use the layout's internal master reference.
+        // This works for freshly cloned layouts but may be stale for reused ones.
         $layoutMaster = null;
         foreach ($slideLayout->getResources() as $resource) {
             if ($resource instanceof SlideMaster) {
@@ -787,28 +822,21 @@ class PPTX
             }
         }
 
-        if ($layoutMaster === null) {
-            return null;
-        }
+        if ($layoutMaster !== null) {
+            $sourceTarget = $layoutMaster->getTarget();
+            $destTarget = $sourceTarget;
 
-        // Get the target path from clonedResources mapping (source → dest)
-        // This tells us what target path the SlideMaster has in the destination
-        $sourceTarget = $layoutMaster->getTarget();
-        $destTarget = $sourceTarget; // Default: same path
-
-        if (isset($clonedResources[$sourceTarget])) {
-            $mappedResource = $clonedResources[$sourceTarget];
-            if ($mappedResource instanceof SlideMaster) {
-                $destTarget = $mappedResource->getTarget();
+            if (isset($clonedResources[$sourceTarget])) {
+                $mappedResource = $clonedResources[$sourceTarget];
+                if ($mappedResource instanceof SlideMaster) {
+                    $destTarget = $mappedResource->getTarget();
+                }
             }
-        }
 
-        // CRITICAL: Find the SlideMaster from the presentation's resources
-        // by matching the target path. This ensures we get the ACTUAL object
-        // that's in the presentation, not a different object with the same path.
-        foreach ($this->presentation->getResources() as $resource) {
-            if ($resource instanceof SlideMaster && $resource->getTarget() === $destTarget) {
-                return $resource;
+            foreach ($this->presentation->getResources() as $resource) {
+                if ($resource instanceof SlideMaster && $resource->getTarget() === $destTarget) {
+                    return $resource;
+                }
             }
         }
 
@@ -850,13 +878,18 @@ class PPTX
             $resource instanceof SvgImage ||
             $resource instanceof Chart ||
             $resource instanceof SlideLayout ||
-            $resource instanceof NoteSlide) {
+            $resource instanceof NoteSlide ||
+            $resource instanceof Theme) {
+            return false;
+        }
+
+        // Tags are linked from their parent slide/layout .rels, not presentation.xml.rels
+        if (str_contains($resource->getTarget(), 'tags/')) {
             return false;
         }
 
         // Resources that SHOULD be in presentation.xml.rels
         // - SlideMaster, NoteMaster, HandoutMaster (handled specially in Presentation::addResource)
-        // - Theme (presentation-level theme reference)
         // - PresProps, ViewProps, TableStyles, etc. (XmlResource with specific paths)
         return true;
     }
@@ -1051,9 +1084,10 @@ class PPTX
      * @param ResourceInterface $resource The root resource
      * @param array $resourceList Accumulated resource list
      * @param array $forceCloneTargets Targets that must be force-cloned (passed by reference)
+     * @param array $layoutToSourceMaster Mapping of layout target → source master target (passed by reference)
      * @return ResourceInterface[] Complete resource tree
      */
-    public function getResourceTree(ResourceInterface $resource, array &$resourceList = [], array &$forceCloneTargets = []): array
+    public function getResourceTree(ResourceInterface $resource, array &$resourceList = [], array &$forceCloneTargets = [], array &$layoutToSourceMaster = []): array
     {
         if (in_array($resource, $resourceList, true)) {
             return $resourceList;
@@ -1068,6 +1102,12 @@ class PPTX
             if ($resource instanceof SlideMaster || $resource instanceof NoteMaster) {
                 $existingResource = $this->getContentType()->lookForSimilarFile($resource);
                 if ($existingResource !== null) {
+                    // Track layout→source master for reused masters too
+                    foreach ($resource->getResources() as $subResource) {
+                        if ($subResource instanceof SlideLayout) {
+                            $layoutToSourceMaster[$subResource->getTarget()] = $resource->getTarget();
+                        }
+                    }
                     // This master will be reused - don't traverse its children
                     return $resourceList;
                 }
@@ -1079,6 +1119,10 @@ class PPTX
                     if ($subResource instanceof Theme || $subResource instanceof SlideLayout) {
                         $forceCloneTargets[] = $subResource->getTarget();
                     }
+                    // Track layout→source master relationship for correct registration later
+                    if ($subResource instanceof SlideLayout) {
+                        $layoutToSourceMaster[$subResource->getTarget()] = $resource->getTarget();
+                    }
                 }
             }
 
@@ -1089,7 +1133,7 @@ class PPTX
                 foreach ($resource->getResources() as $subResource) {
                     // Only traverse NoteMaster - skip Slide to prevent circular reference
                     if ($subResource instanceof NoteMaster) {
-                        $this->getResourceTree($subResource, $resourceList, $forceCloneTargets);
+                        $this->getResourceTree($subResource, $resourceList, $forceCloneTargets, $layoutToSourceMaster);
                     }
                 }
 
@@ -1097,7 +1141,7 @@ class PPTX
             }
 
             foreach ($resource->getResources() as $subResource) {
-                $this->getResourceTree($subResource, $resourceList, $forceCloneTargets);
+                $this->getResourceTree($subResource, $resourceList, $forceCloneTargets, $layoutToSourceMaster);
             }
         }
 
@@ -1174,6 +1218,15 @@ class PPTX
 
         // Clean orphaned resources before saving
         $this->cleanOrphanedResources();
+
+        // Remove themes and tags from presentation.xml.rels that are already
+        // referenced from their parent (SlideMaster, Slide) .rels files.
+        // PowerPoint only expects the main presentation theme in presentation.xml.rels.
+        $this->cleanPresentationRelsRedundancies();
+
+        // Reorder SlideMaster rIds: layouts first (rId1..N), theme last (rId N+1).
+        // PowerPoint triggers repair mode when theme is at rId1.
+        $this->reorderSlideMasterRIds();
 
         // Update app.xml metadata before saving
         $this->updateAppProperties();
@@ -1311,6 +1364,259 @@ class PPTX
 
         // Clean orphaned media files
         $this->cleanOrphanedMedia();
+
+        // Clean orphaned theme files not referenced by any slideMaster
+        $this->cleanOrphanedThemes();
+    }
+
+    /**
+     * Remove theme files that are not referenced in any .rels file.
+     * PowerPoint requires all theme files to be referenced; orphaned themes trigger repair mode.
+     */
+    protected function cleanOrphanedThemes(): void
+    {
+        // Collect all theme files
+        $themeFiles = [];
+        for ($i = 0; $i < $this->archive->numFiles; $i++) {
+            $filename = $this->archive->getNameIndex($i);
+            if ($filename !== false && preg_match('#^ppt/theme/theme\d+\.xml$#', $filename)) {
+                $themeFiles[$filename] = true;
+            }
+        }
+
+        if (empty($themeFiles)) {
+            return;
+        }
+
+        // Collect all referenced themes from .rels files
+        $referencedThemes = [];
+        for ($i = 0; $i < $this->archive->numFiles; $i++) {
+            $filename = $this->archive->getNameIndex($i);
+            if ($filename !== false && str_ends_with($filename, '.rels')) {
+                $content = $this->archive->getFromName($filename);
+                if ($content !== false) {
+                    $relsDir = dirname(dirname($filename));
+                    if (preg_match_all('/Target="([^"]+)"/', $content, $matches)) {
+                        foreach ($matches[1] as $target) {
+                            $resolvedPath = $this->resolveRelativeMediaPath($relsDir, $target);
+                            if ($resolvedPath !== null && isset($themeFiles[$resolvedPath])) {
+                                $referencedThemes[$resolvedPath] = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Remove unreferenced themes from archive and Content_Types
+        foreach ($themeFiles as $themePath => $unused) {
+            if (!isset($referencedThemes[$themePath])) {
+                $this->archive->deleteName($themePath);
+                $this->contentType->removeResource($themePath);
+            }
+        }
+    }
+
+    /**
+     * Reorder rIds in SlideMaster .rels files so layouts come first and theme last.
+     * PowerPoint triggers repair mode when the theme is at rId1 in a SlideMaster.
+     */
+    protected function reorderSlideMasterRIds(): void
+    {
+        for ($i = 0; $i < $this->archive->numFiles; $i++) {
+            $filename = $this->archive->getNameIndex($i);
+            if ($filename === false || !preg_match('#^ppt/slideMasters/_rels/slideMaster(\d+)\.xml\.rels$#', $filename, $m)) {
+                continue;
+            }
+
+            $relsContent = $this->archive->getFromName($filename);
+            if ($relsContent === false) {
+                continue;
+            }
+
+            $xml = new \SimpleXMLElement($relsContent, LIBXML_NOWARNING);
+
+            // Separate layouts from theme
+            $layouts = [];
+            $theme = null;
+            $themeIdx = null;
+            $other = [];
+            $index = 0;
+            foreach ($xml->Relationship as $rel) {
+                $type = (string) $rel['Type'];
+                $target = (string) $rel['Target'];
+                if (str_contains($type, '/theme')) {
+                    $theme = ['target' => $target, 'type' => $type];
+                    $themeIdx = $index;
+                } elseif (str_contains($type, '/slideLayout')) {
+                    $layouts[] = ['target' => $target, 'type' => $type];
+                } else {
+                    $other[] = ['target' => $target, 'type' => $type];
+                }
+                $index++;
+            }
+
+            if ($theme === null) {
+                continue;
+            }
+
+            // Check if theme is already last
+            $totalEntries = count($layouts) + count($other) + 1;
+            if ($themeIdx === $totalEntries - 1) {
+                continue; // Already in correct position
+            }
+
+            // Build new rId mapping: layouts first, other, then theme last
+            $newRIdMap = []; // old target => new rId
+            $nextRId = 1;
+
+            foreach ($layouts as $entry) {
+                $newRIdMap[$entry['target']] = 'rId' . $nextRId++;
+            }
+            foreach ($other as $entry) {
+                $newRIdMap[$entry['target']] = 'rId' . $nextRId++;
+            }
+            $themeRId = 'rId' . $nextRId;
+            $newRIdMap[$theme['target']] = $themeRId;
+
+            // Build old rId -> target mapping to create old rId -> new rId mapping
+            $oldRIdToTarget = [];
+            foreach ($xml->Relationship as $rel) {
+                $oldRIdToTarget[(string) $rel['Id']] = (string) $rel['Target'];
+            }
+            $rIdMapping = [];
+            foreach ($oldRIdToTarget as $oldRId => $target) {
+                if (isset($newRIdMap[$target])) {
+                    $rIdMapping[$oldRId] = $newRIdMap[$target];
+                }
+            }
+
+            // Rewrite the .rels file
+            $relsTemplate = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+            $newXml = new \SimpleXMLElement($relsTemplate, LIBXML_NOWARNING);
+            foreach ($layouts as $entry) {
+                $rel = $newXml->addChild('Relationship');
+                $rel->addAttribute('Id', $newRIdMap[$entry['target']]);
+                $rel->addAttribute('Type', $entry['type']);
+                $rel->addAttribute('Target', $entry['target']);
+            }
+            foreach ($other as $entry) {
+                $rel = $newXml->addChild('Relationship');
+                $rel->addAttribute('Id', $newRIdMap[$entry['target']]);
+                $rel->addAttribute('Type', $entry['type']);
+                $rel->addAttribute('Target', $entry['target']);
+            }
+            $rel = $newXml->addChild('Relationship');
+            $rel->addAttribute('Id', $themeRId);
+            $rel->addAttribute('Type', $theme['type']);
+            $rel->addAttribute('Target', $theme['target']);
+
+            $this->archive->addFromString($filename, $newXml->asXml());
+
+            // Update sldLayoutIdLst rIds in the SlideMaster XML
+            $masterPath = 'ppt/slideMasters/slideMaster' . $m[1] . '.xml';
+            $masterContent = $this->archive->getFromName($masterPath);
+            if ($masterContent !== false) {
+                foreach ($rIdMapping as $oldRId => $newRId) {
+                    if ($oldRId !== $newRId) {
+                        // Replace r:id="oldRId" with r:id="newRId" carefully
+                        $masterContent = str_replace(
+                            'r:id="' . $oldRId . '"',
+                            'r:id="' . $newRId . '__TMP__"',
+                            $masterContent
+                        );
+                    }
+                }
+                // Remove temporary markers
+                $masterContent = str_replace('__TMP__', '', $masterContent);
+                $this->archive->addFromString($masterPath, $masterContent);
+            }
+        }
+    }
+
+    /**
+     * Remove redundant relationships from presentation.xml.rels.
+     *
+     * Themes referenced by SlideMasters and tags referenced by slides/layouts
+     * should NOT also appear in presentation.xml.rels. PowerPoint triggers
+     * "repair" mode when these redundancies exist.
+     */
+    protected function cleanPresentationRelsRedundancies(): void
+    {
+        $presentationRelsPath = 'ppt/_rels/presentation.xml.rels';
+        $content = $this->archive->getFromName($presentationRelsPath);
+        if ($content === false) {
+            return;
+        }
+
+        $xml = new \SimpleXMLElement($content, LIBXML_NOWARNING);
+
+        // Collect targets referenced from child .rels files (slideMasters, slides, slideLayouts, notesMasters)
+        $childReferencedTargets = [];
+        for ($i = 0; $i < $this->archive->numFiles; $i++) {
+            $filename = $this->archive->getNameIndex($i);
+            if ($filename === false || !str_ends_with($filename, '.rels')) {
+                continue;
+            }
+            if ($filename === $presentationRelsPath || $filename === '_rels/.rels') {
+                continue;
+            }
+
+            $relsContent = $this->archive->getFromName($filename);
+            if ($relsContent === false) {
+                continue;
+            }
+            $relsDir = dirname(dirname($filename));
+            if (preg_match_all('/Target="([^"]+)"/', $relsContent, $matches)) {
+                foreach ($matches[1] as $target) {
+                    if (str_starts_with($target, 'http')) {
+                        continue;
+                    }
+                    $resolved = $this->resolveRelativeMediaPath($relsDir, $target);
+                    if ($resolved !== null) {
+                        $childReferencedTargets[$resolved] = true;
+                    }
+                }
+            }
+        }
+
+        // Remove relationships from presentation.xml.rels for themes and tags
+        // that are already referenced by a child .rels file.
+        // Keep the FIRST theme (main presentation theme) — PowerPoint expects it.
+        $toRemove = [];
+        $index = 0;
+        $firstThemeKept = false;
+        foreach ($xml->Relationship as $rel) {
+            $type = (string) $rel['Type'];
+            $target = (string) $rel['Target'];
+            $isTheme = str_contains($type, '/theme');
+            $isTag = str_contains($type, '/tags');
+
+            if ($isTheme) {
+                if (!$firstThemeKept) {
+                    // Keep the first theme as the main presentation theme
+                    $firstThemeKept = true;
+                } else {
+                    $resolved = $this->resolveRelativeMediaPath('ppt', $target);
+                    if ($resolved !== null && isset($childReferencedTargets[$resolved])) {
+                        $toRemove[] = $index;
+                    }
+                }
+            } elseif ($isTag) {
+                $resolved = $this->resolveRelativeMediaPath('ppt', $target);
+                if ($resolved !== null && isset($childReferencedTargets[$resolved])) {
+                    $toRemove[] = $index;
+                }
+            }
+            $index++;
+        }
+
+        if (!empty($toRemove)) {
+            foreach (array_reverse($toRemove) as $idx) {
+                unset($xml->Relationship[$idx]);
+            }
+            $this->archive->addFromString($presentationRelsPath, $xml->asXml());
+        }
     }
 
     /**

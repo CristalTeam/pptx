@@ -171,10 +171,39 @@ class ContentType extends GenericResource
 
     /**
      * Returns a string content from the XML object.
+     * Deduplicates Override entries before serializing to prevent OPC corruption.
      */
     public function getContent(): string
     {
+        $this->deduplicateOverrides();
+
         return $this->content->asXml();
+    }
+
+    /**
+     * Remove duplicate Override entries from [Content_Types].xml.
+     * PowerPoint refuses to open files with duplicate PartName entries.
+     */
+    protected function deduplicateOverrides(): void
+    {
+        $seen = [];
+        $toRemove = [];
+        $index = 0;
+
+        foreach ($this->content->Override as $override) {
+            $partName = (string) $override['PartName'];
+            if (isset($seen[$partName])) {
+                $toRemove[] = $index;
+            } else {
+                $seen[$partName] = true;
+            }
+            $index++;
+        }
+
+        // Remove duplicates in reverse order to maintain indices
+        foreach (array_reverse($toRemove) as $idx) {
+            unset($this->content->Override[$idx]);
+        }
     }
 
     /**
@@ -430,10 +459,13 @@ class ContentType extends GenericResource
         }
 
         // If the contentType does not exist on generic extensions, then add a specific "Override" child.
-        if ($fileContentType !== $realContentType) {
+        // Skip if an Override already exists for this PartName (prevents duplicates).
+        $partName = '/' . $resource->getTarget();
+        if ($fileContentType !== $realContentType && !isset($this->overrides[ltrim($partName, '/')])) {
             $child = $this->content->addChild('Override');
-            $child->addAttribute('PartName', '/' . $resource->getTarget());
+            $child->addAttribute('PartName', $partName);
             $child->addAttribute('ContentType', $realContentType);
+            $this->overrides[ltrim($partName, '/')] = $realContentType;
         }
 
         if ($this->useLRUCache) {
